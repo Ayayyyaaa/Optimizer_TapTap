@@ -99,7 +99,7 @@ class Spekkio:
         À appeler dans la boucle principale de ton jeu à la fin de chaque round.
         """
         if self.character.energy >= 100:
-            self.character.atk *= 1.10
+            self.character.atk += 1.10 * self.character.base_atk
             for enemy in enemies:
                 if enemy.character.is_alive and enemy.character.hp <= (enemy.character.max_hp * 0.50):
                     # --- LOGIQUE DE DEBUFF À AJOUTER SELON TON MOTEUR DE JEU ---

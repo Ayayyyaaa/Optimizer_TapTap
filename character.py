@@ -6,6 +6,7 @@ class Character:
                 self.hp = hp  
                 self.base_atk = atk
                 self.atk = atk
+                self.max_defense = defense
                 self.defense = defense
                 self.spd = spd
                 self.skilld_mg = skilld_mg

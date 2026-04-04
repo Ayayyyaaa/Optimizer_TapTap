@@ -4,12 +4,14 @@ class Weapon:
         self.name = name
     def on_battle_start(self, fighter): pass
     def on_round_start(self, fighter, allies): pass
-    def on_basic_attack(self, fighter): pass
+    def on_basic_attack(self, fighter, dmg): pass
     def on_round_end(self, fighter, allies, round_number): pass
     def modify_damage_dealt(self, fighter, target, current_damage): return current_damage
     def on_ally_die(self, fighter, allies):
         pass
     def on_ennemy_die(self, fighter, allies):
+        pass
+    def on_block(self, fighter):
         pass
 
 class Weapon_Khopesh:
@@ -17,7 +19,7 @@ class Weapon_Khopesh:
     def __init__(self): self.name = "Khopesh"
     def on_battle_start(self, fighter): pass
     def on_round_start(self, fighter, allies): pass
-    def on_basic_attack(self, fighter): pass
+    def on_basic_attack(self, fighter, dmg): pass
     def on_round_end(self, fighter, allies, round_number): pass
     def modify_damage_dealt(self, fighter, target, current_damage):
         return current_damage * 1.40
@@ -25,19 +27,23 @@ class Weapon_Khopesh:
         pass
     def on_ennemy_die(self, fighter, allies):
         pass
+    def on_block(self, fighter):
+        pass
     
 class Weapon_Katana:
     group = 2
     def __init__(self): self.name = "Katana"
     def on_battle_start(self, fighter): pass
     def on_round_start(self, fighter, allies): pass
-    def on_basic_attack(self, fighter): pass
+    def on_basic_attack(self, fighter, dmg): pass
     def on_round_end(self, fighter, allies, round_number): pass
     def modify_damage_dealt(self, fighter, target, current_damage):
         return current_damage * 1.35
     def on_ally_die(self, fighter, allies):
         pass
     def on_ennemy_die(self, fighter, allies):
+        pass
+    def on_block(self, fighter):
         pass
     
 class Weapon_Sai:
@@ -47,11 +53,13 @@ class Weapon_Sai:
     def on_round_start(self, fighter, allies): pass
     def on_round_end(self, fighter, allies, round_number): pass
     def modify_damage_dealt(self, fighter, target, current_damage): return current_damage
-    def on_basic_attack(self, fighter):
+    def on_basic_attack(self, fighter, dmg):
         fighter.energy += 60
     def on_ally_die(self, fighter, allies):
         pass
     def on_ennemy_die(self, fighter, allies):
+        pass
+    def on_block(self, fighter):
         pass
 
 class Weapon_Kunai:
@@ -59,12 +67,14 @@ class Weapon_Kunai:
     def __init__(self): self.name = "Kunai"
     def on_battle_start(self, fighter): pass
     def on_round_start(self, fighter, allies): pass
-    def on_basic_attack(self, fighter): pass
+    def on_basic_attack(self, fighter, dmg): pass
     def on_round_end(self, fighter, allies, round_number): pass
     def modify_damage_dealt(self, fighter, target, current_damage): return current_damage
     def on_ally_die(self, fighter, allies):
         pass
     def on_ennemy_die(self, fighter, allies):
+        pass
+    def on_block(self, fighter):
         pass
 
 class Weapon_Knife:
@@ -72,7 +82,7 @@ class Weapon_Knife:
     def __init__(self): self.name = "Knife"
     def on_battle_start(self, fighter): pass
     def on_round_start(self, fighter, allies): pass
-    def on_basic_attack(self, fighter): pass
+    def on_basic_attack(self, fighter, dmg): pass
     def on_round_end(self, fighter, allies, round_number): pass
     def modify_damage_dealt(self, fighter, target, current_damage): return current_damage
     def modify_dot_damage(self, current_dot_damage):
@@ -80,6 +90,8 @@ class Weapon_Knife:
     def on_ally_die(self, fighter, allies):
         pass
     def on_ennemy_die(self, fighter, allies):
+        pass
+    def on_block(self, fighter):
         pass
     
 class Weapon_Katar:
@@ -92,7 +104,7 @@ class Weapon_Katar:
         if all(ally.character.is_alive for ally in allies):
             fighter.attack_multiplier += 0.40
             fighter.spd += 40
-    def on_basic_attack(self, fighter): pass
+    def on_basic_attack(self, fighter, dmg): pass
     def on_round_end(self, fighter, allies, round_number):
         fighter.attack_multiplier -= 0.40
         fighter.spd -= 40
@@ -101,6 +113,9 @@ class Weapon_Katar:
         pass
     def on_ennemy_die(self, fighter, allies):
         pass
+    def on_block(self, fighter):
+        pass
+
 
 class Weapon_Shuriken:
     group = 2
@@ -108,7 +123,7 @@ class Weapon_Shuriken:
         self.name = "Shuriken"
     def on_battle_start(self, fighter):pass
     def on_round_start(self, fighter, allies): pass
-    def on_basic_attack(self, fighter): pass
+    def on_basic_attack(self, fighter, dmg): pass
     def on_round_end(self, fighter, allies, round_number): pass
     def modify_damage_dealt(self, fighter, target, current_damage): 
         if target.faction == factions.get(fighter.faction):
@@ -117,6 +132,8 @@ class Weapon_Shuriken:
     def on_ally_die(self, fighter, allies):
         pass
     def on_ennemy_die(self, fighter, allies):
+        pass
+    def on_block(self, fighter):
         pass
     
 class Weapon_Nunchucks:
@@ -128,7 +145,7 @@ class Weapon_Nunchucks:
         self.stacks = 0
     def on_round_start(self, fighter, allies):
         pass
-    def on_basic_attack(self, fighter): pass
+    def on_basic_attack(self, fighter, dmg): pass
     def on_round_end(self, fighter, allies, round_number): 
         if self.stacks < 5:
             fighter.atk += 0.20 * fighter.base_atk
@@ -139,9 +156,11 @@ class Weapon_Nunchucks:
         pass
     def on_ennemy_die(self, fighter, allies):
         pass
+    def on_block(self, fighter):
+        pass
     
 class Weapon_Bow:
-    group = 1
+    group = 3
     def __init__(self):
         self.name = "Bow"
         self.stacks = 0
@@ -149,7 +168,7 @@ class Weapon_Bow:
         self.stacks = 0
     def on_round_start(self, fighter, allies):
         pass
-    def on_basic_attack(self, fighter): pass
+    def on_basic_attack(self, fighter, dmg): pass
     def on_round_end(self, fighter, allies, round_number): 
         if self.stacks > 1:
             self.stacks -= 1
@@ -163,3 +182,121 @@ class Weapon_Bow:
     def on_ennemy_die(self, fighter, allies):
         self.stacks = 3 
         fighter.cr += 60
+    def on_block(self, fighter):
+        pass
+
+class Weapon_Cobra:
+    group = 4
+    def __init__(self):
+        self.name = "Cobra Staff"
+    def on_battle_start(self, fighter):pass
+    def on_round_start(self, fighter, allies):
+        if fighter.hp < fighter.max_hp * 0.5:
+            fighter.energy += 50
+        if fighter.hp < fighter.max_hp * 0.25:
+            fighter.energy += 70
+    def on_basic_attack(self, fighter, dmg): pass
+    def on_round_end(self, fighter, allies, round_number): pass
+    def modify_damage_dealt(self, fighter, target, current_damage): 
+        return current_damage
+    def on_ally_die(self, fighter, allies):
+        pass
+    def on_ennemy_die(self, fighter, allies):
+        pass
+    def on_block(self, fighter):
+        pass
+
+class Weapon_Kunai:
+    group = 2
+    def __init__(self):
+        self.name = "Cobra Staff"
+    def on_battle_start(self, fighter):pass
+    def on_round_start(self, fighter, allies):
+        if fighter.hp < fighter.max_hp * 0.5:
+            fighter.energy += 50
+        if fighter.hp < fighter.max_hp * 0.25:
+            fighter.energy += 70
+    def on_basic_attack(self, fighter, dmg): pass
+    def on_round_end(self, fighter, allies, round_number): pass
+    def modify_damage_dealt(self, fighter, target, current_damage): 
+        return current_damage
+    def on_ally_die(self, fighter, allies):
+        pass
+    def on_ennemy_die(self, fighter, allies):
+        pass
+    def on_block(self, fighter):
+        fighter.energy += 80
+
+class Weapon_Knuckles:
+    group = 1
+    def __init__(self):
+        self.name = "Knuckles"
+    def on_battle_start(self, fighter):pass
+    def on_round_start(self, fighter, allies): pass
+    def on_basic_attack(self, fighter, dmg):
+        fighter.hp += dmg * 2
+    def on_round_end(self, fighter, allies, round_number): pass
+    def modify_damage_dealt(self, fighter, target, current_damage): 
+        return current_damage
+    def on_ally_die(self, fighter, allies):
+        pass
+    def on_ennemy_die(self, fighter, allies):
+        pass
+    def on_block(self, fighter):
+        pass
+
+class Weapon_Claw:
+    group = 2
+    def __init__(self):
+        self.name = "Claw"
+    def on_battle_start(self, fighter):pass
+    def on_round_start(self, fighter, allies): pass
+    def on_basic_attack(self, fighter, dmg):pass
+    def on_round_end(self, fighter, allies, round_number): pass
+    def modify_damage_dealt(self, fighter, target, current_damage): 
+        return current_damage
+    def on_ally_die(self, fighter, allies):
+        pass
+    def on_ennemy_die(self, fighter, allies):
+        fighter.hp += fighter.atk * 12
+    def on_block(self, fighter):
+        pass
+
+class Weapon_Haladie:
+    group = 3
+    def __init__(self):
+        self.name = "Haladie"
+    def on_battle_start(self, fighter):pass
+    def on_round_start(self, fighter, allies): pass
+    def on_basic_attack(self, fighter, dmg):pass
+    def on_round_end(self, fighter, allies, round_number):
+        fighter.hp += fighter.max_hp * 0.25
+    def modify_damage_dealt(self, fighter, target, current_damage): 
+        return current_damage
+    def on_ally_die(self, fighter, allies):
+        pass
+    def on_ennemy_die(self, fighter, allies):
+        pass
+    def on_block(self, fighter):
+        pass
+
+class Weapon_Pipe:
+    group = 1
+    def __init__(self):
+        self.name = "Pipe"
+        self.stacks = 0
+    def on_battle_start(self, fighter):pass
+    def on_round_start(self, fighter, allies): pass
+    def on_basic_attack(self, fighter, dmg):pass
+    def on_round_end(self, fighter, allies, round_number):
+        if self.stacks < 5:
+            fighter.defense += 0.40 * fighter.max_defense
+            self.stacks += 1
+    def modify_damage_dealt(self, fighter, target, current_damage): 
+        return current_damage
+    def on_ally_die(self, fighter, allies):
+        pass
+    def on_ennemy_die(self, fighter, allies):
+        pass
+    def on_block(self, fighter):
+        pass

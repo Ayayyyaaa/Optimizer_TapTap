@@ -37,8 +37,9 @@ class Spekkio:
             damage = base_damage
         self.passif1(enemies)
         for w in self.character.weapon:
-            w.on_basic_attack(self.character)
             damage = w.modify_damage_dealt(self.character, target.character, damage)
+            w.on_basic_attack(self.character, damage)
+            
             
         return damage*self.character.attack_multiplier
     

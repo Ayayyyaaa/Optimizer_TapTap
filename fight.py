@@ -36,8 +36,15 @@ def simulate_combat(weapon_combo):
     return dmg_tot
 
 def launch_optimizer():
-    available_weapons = [Weapon_Bow, Weapon_Nunchucks, Weapon_Shuriken, Weapon_Khopesh, Weapon_Katana, Weapon_Sai, Weapon_Kunai, Weapon_Katar, Weapon_Knife]
+    # Liste des classes d'armes disponibles (attention aux doublons, Kunai y était 2 fois)
+    available_weapons = [
+        Weapon_Pipe, Weapon_Haladie, Weapon_Claw, Weapon_Knuckles, 
+        Weapon_Cobra, Weapon_Bow, Weapon_Nunchucks, Weapon_Shuriken, 
+        Weapon_Khopesh, Weapon_Katana, Weapon_Sai, Weapon_Kunai, 
+        Weapon_Katar, Weapon_Knife
+    ]
 
+    # Génère toutes les combinaisons de 3 armes possibles
     all_combinations = list(itertools.combinations(available_weapons, 3))
     
     results = []
@@ -47,7 +54,8 @@ def launch_optimizer():
     
     for combo in all_combinations:
         groups = [combo[0].group, combo[1].group, combo[2].group]
-        if len(set(groups)) < 3:
+        
+        if groups.count(1) > 1 or groups.count(2) > 1 or groups.count(3) > 1:
             continue
             
         total_dmg_across_sims = 0
@@ -62,11 +70,11 @@ def launch_optimizer():
             "combo_name": combo_name,
             "avg_damage": avg_damage
         })
+        
     results.sort(key=lambda x: x["avg_damage"], reverse=True)
     
     print("===== CLASSEMENT DES MEILLEURES COMBINAISONS =====")
-    for i, res in enumerate(results[:10]): 
+    for i, res in enumerate(results[:]): 
         print(f"#{i+1} : {res['combo_name']} -> {res['avg_damage']:,.0f} dégâts en moyenne")
 
-# Lancer la recherche
 launch_optimizer()

@@ -9,7 +9,7 @@ class Character:
                 self.max_defense = defense
                 self.defense = defense
                 self.spd = spd
-                self.skilld_mg = skilld_mg
+                self.skill_dmg = skilld_mg
                 self.block = block
                 self.cr = cr
                 self.cd = cd
@@ -28,5 +28,6 @@ class Character:
                 self.is_alive = True
                 self.is_stunned = False
                 self.attack_multiplier = 1
+                self.true_dmg = 0
 
         

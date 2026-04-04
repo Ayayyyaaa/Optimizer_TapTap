@@ -300,3 +300,56 @@ class Weapon_Pipe:
         pass
     def on_block(self, fighter):
         pass
+
+class Weapon_Kusarigama:
+    group = 4
+    def __init__(self):
+        self.name = "Kusarigama"
+        self.stacks = 0
+    def on_battle_start(self, fighter):
+        fighter.block += 0.25
+    def on_round_start(self, fighter, allies): pass
+    def on_basic_attack(self, fighter, dmg):pass
+    def on_round_end(self, fighter, allies, round_number): pass
+    def modify_damage_dealt(self, fighter, target, current_damage): 
+        return current_damage
+    def on_ally_die(self, fighter, allies):
+        cpt = 0
+        for ally in allies:
+            if ally.character.is_alive:
+                cpt += 1
+        if cpt == 1 and self.stacks == 0:
+            self.stacks = 1
+            fighter.dmg_reduce += 0.6
+    def on_ennemy_die(self, fighter, allies):
+        pass
+    def on_block(self, fighter):
+        pass
+
+class Weapon_Dart:
+    group = 3
+    def __init__(self):
+        self.name = "Dart"
+        self.stacks = 0
+        self.effective = False
+    def on_battle_start(self, fighter):pass
+    def on_round_start(self, fighter, allies): 
+        if self.stacks > 0:
+            self.stacks -= 1
+            if self.stacks == 0 and self.effective:
+                fighter.spd -= 80
+                fighter.block -= 0.8
+        elif fighter.hp < fighter.max_hp * 0.5 and not self.effective:
+            self.effective = True
+            self.stacks = 5
+            fighter.spd += 80
+            fighter.block += 0.8
+    def on_basic_attack(self, fighter, dmg):pass
+    def on_round_end(self, fighter, allies, round_number): pass
+    def modify_damage_dealt(self, fighter, target, current_damage): 
+        return current_damage
+    def on_ally_die(self, fighter, allies):pass
+    def on_ennemy_die(self, fighter, allies):
+        pass
+    def on_block(self, fighter):
+        pass

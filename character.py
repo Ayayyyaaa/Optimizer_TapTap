@@ -4,6 +4,7 @@ class Character:
                 self.faction = faction
                 self.max_hp = hp 
                 self.hp = hp  
+                self.base_atk = atk
                 self.atk = atk
                 self.defense = defense
                 self.spd = spd
@@ -25,5 +26,6 @@ class Character:
                 self.position = pos
                 self.is_alive = True
                 self.is_stunned = False
+                self.attack_multiplier = 1
 
         

@@ -15,8 +15,10 @@
 #    - 3 index d'armes dans WEAPON_INVENTORY (règle de groupe respectée)
 #    - 2 index de dragons dans DRAGON_INVENTORY (pas de doublon par perso)
 #
-#  Les contraintes (unicité armes, stock dragons) sont gérées à la
-#  construction et à la réparation post-mutation/croisement.
+#  Contraintes gérées :
+#    - Unicité des fighters dans l'équipe (1 seul exemplaire par perso)
+#    - Unicité des armes entre fighters
+#    - Stock de dragons respecté (pas de doublon par perso, stock global)
 # ═══════════════════════════════════════════════════════════════
 
 import random
@@ -109,12 +111,22 @@ class Genome:
 # ═══════════════════════════════════════════════════════════════
 
 def _pick_fighters() -> list[int]:
-    """Tire TEAM_SIZE fighters distincts dans FIGHTER_POOL."""
+    """
+    Tire TEAM_SIZE fighters DISTINCTS dans FIGHTER_POOL.
+    Chaque fighter ne peut apparaître qu'une seule fois dans l'équipe.
+    Si le pool est plus petit que TEAM_SIZE, on remplit avec des doublons
+    en dernier recours (cas extrême, à éviter en pratique).
+    """
     idxs = list(range(len(FIGHTER_POOL)))
-    if len(idxs) < TEAM_SIZE:
-        # Pool trop petit : on autorise les doublons
-        return [random.choice(idxs) for _ in range(TEAM_SIZE)]
-    return random.sample(idxs, TEAM_SIZE)
+    if len(idxs) >= TEAM_SIZE:
+        return random.sample(idxs, TEAM_SIZE)
+    else:
+        # Pool trop petit — on prend tous les fighters disponibles
+        # puis on complète avec des doublons des moins utilisés
+        chosen = list(idxs)
+        while len(chosen) < TEAM_SIZE:
+            chosen.append(random.choice(idxs))
+        return chosen
 
 
 def _pick_weapons_for_team() -> list[tuple]:
@@ -190,8 +202,6 @@ def _draw_valid_dragon_combo(stock: list[int]) -> tuple:
     chosen_classes = set()
 
     for di in candidates:
-        cls = type(DRAGON_POOL[di]) if not isinstance(DRAGON_POOL[di], type) else DRAGON_POOL[di]
-        # DRAGON_POOL contient des classes, pas des instances
         dragon_cls = DRAGON_POOL[di]
         if dragon_cls in chosen_classes:
             continue
@@ -215,7 +225,7 @@ def crossover(parent_a: Genome, parent_b: Genome) -> tuple["Genome", "Genome"]:
     """
     Croisement à point unique sur les slots.
     Les deux enfants héritent de blocs entiers de slots.
-    Les contraintes (unicité armes/dragons) sont réparées après.
+    Les contraintes (unicité fighters/armes/dragons) sont réparées après.
     """
     point = random.randint(1, TEAM_SIZE - 1)
 
@@ -227,43 +237,83 @@ def crossover(parent_a: Genome, parent_b: Genome) -> tuple["Genome", "Genome"]:
     child_b.slots = (copy.deepcopy(parent_b.slots[:point]) +
                      copy.deepcopy(parent_a.slots[point:]))
 
-    _repair(child_a)
-    _repair(child_b)
+    repair(child_a)
+    repair(child_b)
     return child_a, child_b
 
 
-def mutate(genome: Genome) -> Genome:
+def mutate(parent: Genome) -> Genome:
     """
-    Mutation : pour chaque slot, avec probabilité mutation_rate,
-    on remplace aléatoirement le fighter, une arme, ou un dragon.
+    Mutation aléatoire sur un génome.
+    Chaque gène (fighter, arme, dragon) a cfg['mutation_rate'] de chance de muter.
+    Les contraintes sont réparées après.
     """
-    rate = GA_CONFIG["mutation_rate"]
-    mutant = copy.deepcopy(genome)
+    cfg  = GA_CONFIG
+    rate = cfg["mutation_rate"]
+    child = copy.deepcopy(parent)
+    child.fitness = -1.0
 
-    for slot in mutant.slots:
+    for slot in child.slots:
+        # Mutation du fighter
         if random.random() < rate:
-            slot["fighter_idx"] = random.randint(0, len(FIGHTER_POOL) - 1)
-        if random.random() < rate and len(slot["weapon_idxs"]) > 0:
-            pos = random.randint(0, len(slot["weapon_idxs"]) - 1)
-            slot["weapon_idxs"][pos] = random.randint(0, len(WEAPON_INVENTORY) - 1)
-        if random.random() < rate and len(slot["dragon_idxs"]) > 0:
-            pos = random.randint(0, len(slot["dragon_idxs"]) - 1)
-            slot["dragon_idxs"][pos] = random.randint(0, len(DRAGON_POOL) - 1)
+            slot["fighter_idx"] = random.randrange(len(FIGHTER_POOL))
 
-    _repair(mutant)
-    return mutant
+        # Mutation d'une arme aléatoire
+        if random.random() < rate:
+            weapon_to_mutate = random.randrange(3)
+            slot["weapon_idxs"][weapon_to_mutate] = random.randrange(len(WEAPON_INVENTORY))
+
+        # Mutation d'un dragon aléatoire
+        if random.random() < rate:
+            dragon_to_mutate = random.randrange(2)
+            slot["dragon_idxs"][dragon_to_mutate] = random.randrange(len(DRAGON_POOL))
+
+    repair(child)
+    return child
 
 
-def _repair(genome: Genome):
+# ═══════════════════════════════════════════════════════════════
+#  RÉPARATION DES CONTRAINTES
+# ═══════════════════════════════════════════════════════════════
+
+def repair(genome: Genome):
     """
     Répare les violations de contraintes après crossover/mutation :
+    - Unicité des fighters dans l'équipe (UN SEUL exemplaire par perso)
     - Unicité des armes entre fighters
     - Stock de dragons respecté
     - Pas de doublon de dragon sur le même perso
     - Règle de groupe des armes par perso
     """
+    _repair_fighters(genome)   # ← NOUVEAU : unicité des persos
     _repair_weapons(genome)
     _repair_dragons(genome)
+
+
+def _repair_fighters(genome: Genome):
+    """
+    Garantit qu'un même fighter n'apparaît qu'une seule fois dans l'équipe.
+    Les doublons sont remplacés par des fighters non encore utilisés,
+    tirés aléatoirement dans FIGHTER_POOL.
+    """
+    used_fighters: set[int] = set()
+    all_idxs = list(range(len(FIGHTER_POOL)))
+
+    for slot in genome.slots:
+        fi = slot["fighter_idx"]
+        if fi not in used_fighters:
+            used_fighters.add(fi)
+        else:
+            # Ce fighter est déjà dans l'équipe → on cherche un remplaçant
+            available = [i for i in all_idxs if i not in used_fighters]
+            if available:
+                new_fi = random.choice(available)
+                slot["fighter_idx"] = new_fi
+                used_fighters.add(new_fi)
+            else:
+                # Pool épuisé (pool < TEAM_SIZE) : on garde le doublon en dernier recours
+                # et on n'ajoute pas à used_fighters pour permettre d'autres slots
+                pass
 
 
 def _repair_weapons(genome: Genome):
@@ -311,15 +361,14 @@ def _find_weapon_replacement(used: set, used_groups: set, all_available: list) -
 
 
 def _repair_dragons(genome: Genome):
-    # Repairs dragon stock violations and per-slot duplicates.
-    # Always guarantees exactly 2 dragons per slot.
+    """Répare les violations de stock de dragons et doublons par slot."""
     usage_count: Counter = Counter()
 
     for slot in genome.slots:
         repaired = []
         slot_classes: set = set()
 
-        # Pass 1: validate existing dragons
+        # Pass 1: valide les dragons existants
         for di in slot["dragon_idxs"]:
             d_cls = DRAGON_POOL[di]
             if usage_count[di] < 1 and d_cls not in slot_classes:
@@ -327,7 +376,7 @@ def _repair_dragons(genome: Genome):
                 usage_count[di] += 1
                 slot_classes.add(d_cls)
 
-        # Pass 2: fill up to 2
+        # Pass 2: complète jusqu'à 2 dragons
         attempts = 0
         while len(repaired) < 2 and attempts < 50:
             attempts += 1
@@ -337,7 +386,7 @@ def _repair_dragons(genome: Genome):
                 usage_count[replacement] += 1
                 slot_classes.add(DRAGON_POOL[replacement])
             else:
-                # Fallback: ignore stock, just avoid per-slot duplicate
+                # Fallback: ignore le stock, évite juste les doublons par slot
                 candidates = [di for di in range(len(DRAGON_POOL))
                               if DRAGON_POOL[di] not in slot_classes]
                 if candidates:

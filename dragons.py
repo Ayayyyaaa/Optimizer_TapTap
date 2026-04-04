@@ -26,7 +26,7 @@ class Zhulong(Dragon):
 
     def on_battle_start(self, fighter):
         fighter.skill_dmg += 0.6
-        fighter.hit_chance += 0.6
+        fighter.hit_chance -= 0.6
         fighter.control_precision += 0.5
     
     def on_round_end(self, fighter, allies, round_number):
@@ -52,7 +52,7 @@ class Tianlu(Dragon):
         super().__init__("Tianlu")
 
     def on_battle_start(self, fighter):
-        fighter.max_hp *= 0.25
+        fighter.max_hp *= 1.25
         fighter.dmg_reduce += 0.25
         fighter.control_resist += 0.5
         fighter.true_dmg += 0.3
@@ -77,7 +77,7 @@ class Yamata(Dragon):
 
     def on_battle_start(self, fighter):
         fighter.atk += 0.25 * fighter.base_atk
-        fighter.max_hp *= 0.25
+        fighter.max_hp *= 1.25
         fighter.energy += 150
         fighter.true_dmg += 0.3
 
@@ -123,7 +123,7 @@ class Goujun(Dragon):
 
     def on_battle_start(self, fighter):
         fighter.atk += 0.18 * fighter.base_atk
-        fighter.hp_max *= 0.18
+        fighter.max_hp *= 1.18
 
 class Mingshe(Dragon):
     """
@@ -133,7 +133,7 @@ class Mingshe(Dragon):
 
     def on_battle_start(self, fighter):
         fighter.dmg_reduce += 0.25
-        fighter.hp_max *= 0.20
+        fighter.max_hp *= 1.20
 
 class Apep(Dragon):
     """

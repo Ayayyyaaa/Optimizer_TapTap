@@ -62,22 +62,46 @@ class Weapon_Sai:
     def on_block(self, fighter):
         pass
 
-class Weapon_Kunai:
+from debuffs import apply_buff, tick_buffs, remove_buff, has_buff
+
+
+class Weapon_Bomb:
     group = 2
-    def __init__(self): self.name = "Kunai"
+    def __init__(self):
+        self.name = "Bomb"
     def on_battle_start(self, fighter): pass
     def on_round_start(self, fighter, allies): pass
     def on_basic_attack(self, fighter, dmg): pass
-    def on_round_end(self, fighter, allies, round_number): pass
-    def modify_damage_dealt(self, fighter, target, current_damage): return current_damage
+    def on_round_end(self, fighter, allies, round_number):pass
+    def modify_damage_dealt(self, fighter, target, current_damage):
+        return current_damage
     def on_ally_die(self, fighter, allies):
-        pass
-    def on_ennemy_die(self, fighter, allies):
-        pass
-    def on_block(self, fighter):
-        pass
+        buff_type = f"bomb_skill_dmg"
+        if has_buff(fighter, buff_type):
+            fighter.skill_dmg += 0.25
+            for b in fighter.buffs:
+                if b["type"] == buff_type:
+                    b["duration"] = 3
+                    b["delta"]   += 0.25  
+                    break
+        else:
+            apply_buff(fighter, buff_type, duration=3, delta_override=0.25, source=self)
+    def on_ennemy_die(self, fighter, allies): pass
+    def on_block(self, fighter): pass
 
 class Weapon_Knife:
+    """
+    Knife — triple les dégâts de DoT (saignement, poison, brûlure, etc.)
+    
+    IMPORTANT : nécessite que le moteur de combat appelle
+    weapon.modify_dot_damage(fighter, dot_dmg) lors de l'application
+    des dégâts de debuffs DoT.
+    
+    Fighters concernés : ceux qui ont des debuffs DoT dans leur kit
+    (bleeding, poisoned, burning…).
+    
+    NON PERTINENT pour Chancer (pas de DoT dans son kit).
+    """
     group = 1
     def __init__(self): self.name = "Knife"
     def on_battle_start(self, fighter): pass
@@ -85,7 +109,8 @@ class Weapon_Knife:
     def on_basic_attack(self, fighter, dmg): pass
     def on_round_end(self, fighter, allies, round_number): pass
     def modify_damage_dealt(self, fighter, target, current_damage): return current_damage
-    def modify_dot_damage(self, current_dot_damage):
+    def modify_dot_damage(self, fighter, current_dot_damage):
+        """Appelé par le moteur lors du tick de dégâts de debuff DoT."""
         return current_dot_damage * 3.0
     def on_ally_die(self, fighter, allies):
         pass
@@ -209,13 +234,9 @@ class Weapon_Cobra:
 class Weapon_Kunai:
     group = 2
     def __init__(self):
-        self.name = "Cobra Staff"
+        self.name = "Kunai"
     def on_battle_start(self, fighter):pass
-    def on_round_start(self, fighter, allies):
-        if fighter.hp < fighter.max_hp * 0.5:
-            fighter.energy += 50
-        if fighter.hp < fighter.max_hp * 0.25:
-            fighter.energy += 70
+    def on_round_start(self, fighter, allies):pass
     def on_basic_attack(self, fighter, dmg): pass
     def on_round_end(self, fighter, allies, round_number): pass
     def modify_damage_dealt(self, fighter, target, current_damage): 

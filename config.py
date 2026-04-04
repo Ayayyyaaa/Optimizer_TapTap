@@ -2,9 +2,14 @@
 #  CONFIG.PY  —  Inventaire du joueur & pool de personnages
 # ═══════════════════════════════════════════════════════════════
 
+from fighter.chancer import Chancer
+from fighter.laguna import Laguna
 from weapon import *
 from dragons import *
-from fighter import Spekkio  # Ajoute ici tous tes fighters
+from fighter.okami import Okami 
+from fighter.spekkio import Spekkio
+from fighter.zemus import Zemus
+from fighter.saban import Saban # Ajoute ici tous tes fighters
 
 # ───────────────────────────────────────────────────────────────
 #  POOL DE PERSOS (les 60 disponibles)
@@ -13,12 +18,17 @@ from fighter import Spekkio  # Ajoute ici tous tes fighters
 # ───────────────────────────────────────────────────────────────
 FIGHTER_POOL = [
     Spekkio,  # Remplace/duplique avec tes 60 persos réels
+    Okami,
+    Saban, 
+    Chancer,
+    Laguna,
+    Zemus
 ]
 
 # ───────────────────────────────────────────────────────────────
 #  TAILLE DE L'ÉQUIPE
 # ───────────────────────────────────────────────────────────────
-TEAM_SIZE = 6
+TEAM_SIZE = 3
 
 # ───────────────────────────────────────────────────────────────
 #  INVENTAIRE ARMES
@@ -42,6 +52,8 @@ WEAPON_INVENTORY = [
     Weapon_Knife,
     Weapon_Dart,
     Weapon_Spear,
+    Weapon_FanAxe,
+    Weapon_Tomahawk,
 ]
 
 # ───────────────────────────────────────────────────────────────
@@ -51,22 +63,26 @@ WEAPON_INVENTORY = [
 # ───────────────────────────────────────────────────────────────
 DRAGON_INVENTORY = {
     Zhulong:  2,
-    Yinglong: 2,
+    Yinglong: 1,
     Yamata:   1,
     Naga:     2,
     Tianlu:   1,
+    Dabei:    2,
+    Matsu:     3,
+    Toronbo:   3,
+    Mingshe:   5,
 }
 
 # ───────────────────────────────────────────────────────────────
 #  PARAMÈTRES ALGORITHME GÉNÉTIQUE
 # ───────────────────────────────────────────────────────────────
 GA_CONFIG = {
-    "population_size":  80,    # Individus par génération
-    "generations":      60,    # Nombre de générations
+    "population_size":  500,    # Individus par génération
+    "generations":      100,    # Nombre de générations
     "elite_ratio":      0.10,  # Top 10% survivent directement
     "crossover_ratio":  0.60,  # 60% issus de croisement
     "mutation_rate":    0.20,  # Probabilité de mutation par gène
-    "simulations":      8,     # Combats simulés par évaluation (vitesse vs précision)
+    "simulations":      30,     # Combats simulés par évaluation (vitesse vs précision)
     "rounds":           10,    # Tours par simulation
     "stagnation_limit": 15,    # Arrêt anticipé si pas d'amélioration après N générations
 }

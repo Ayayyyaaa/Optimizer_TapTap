@@ -44,10 +44,10 @@ from debuffs import apply_debuff, has_debuff, apply_buff, remove_debuff
 class Zemus:
     """Fighter Zemus — Faction Cobra."""
 
-    BASE_HP    = 6_100_000
-    BASE_ATK   = 95_000
-    BASE_DEF   = 3_200
-    BASE_SPD   = 1_380
+    BASE_HP    = 3_121_813
+    BASE_ATK   = 79_070
+    BASE_DEF   = 1_990
+    BASE_SPD   = 1_392
     BASE_CR    = 0.15   # avant Death Machine
     BASE_CD    = 1.50   # avant Death Machine
 
@@ -71,7 +71,7 @@ class Zemus:
             stealth            = False,
             weapon             = [],
             dragons            = [],
-            pos                = "front",
+            pos                = "back",
         )
 
         # Immunité Curse (Death Machine P1)

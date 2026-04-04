@@ -28,7 +28,7 @@
 #
 #  [ACTIVE] Dice Storm
 #    - Inflige 550% dmg à un nombre aléatoire d'ennemis basé sur le Dice Roll
-#    - Si un seul ennemi reste, le Dice Roll = nombre d'attaques sur cette cible
+#    - Si un seul ennemi reste, le Dice Roll = nombre d'attaques et de malédictions sur cette cible sur cette cible
 #    - Dice Roll ODD  → 100% chance de Magic Shield 2 rounds + 350% Frostbite dmg 3 rounds
 #    - Dice Roll EVEN → +100% dmg supplémentaire + 350% Curse dmg 3 rounds
 #    - Dice Roll ≤ 3  → réduit Hit Chance front line de 30% pendant 2 rounds
@@ -51,10 +51,10 @@ from debuffs import apply_debuff, has_debuff, apply_buff
 class Chancer:
     """Fighter Chancer — Faction Crane."""
 
-    BASE_HP          = 6_368_499
-    BASE_ATK         = 92_261
-    BASE_DEF         = 3_442
-    BASE_SPD         = 1_443
+    BASE_HP          = 2_747_196
+    BASE_ATK         = 71_881
+    BASE_DEF         = 1_920
+    BASE_SPD         = 1_250
     BASE_CR          = 0.55
     BASE_CD          = 1.30
     BASE_SKILL_DMG   = 0.35
@@ -82,7 +82,7 @@ class Chancer:
             stealth            = False,
             weapon             = [],
             dragons            = [],
-            pos                = "front",
+            pos                = "back",
         )
 
         self._dice_roll           = 1
@@ -249,9 +249,8 @@ class Chancer:
             self._magic_shield_duration = 2
 
             # Frostbite 350% ATK — passe par _apply_debuff_damage
-            # afin que Knife (×3) et toute arme similaire s'appliquent
             base_frostbite = char.atk * 3.50
-            for target in alive_enemies:
+            for target in targets: # <--- CORRIGÉ : On itère sur le nombre de coups !
                 target_char = getattr(target, "character", target)
                 apply_debuff(target_char, "frostbite", duration=3, source=self)
                 dmg = self._apply_debuff_damage(base_frostbite, target_char)
@@ -263,7 +262,7 @@ class Chancer:
         if is_even:
             # Curse 350% ATK — passe par _apply_debuff_damage
             base_curse = char.atk * 3.50
-            for target in alive_enemies:
+            for target in targets: # <--- CORRIGÉ : On itère sur le nombre de coups !
                 target_char = getattr(target, "character", target)
                 apply_debuff(target_char, "cursed", duration=3, source=self)
                 dmg = self._apply_debuff_damage(base_curse, target_char)

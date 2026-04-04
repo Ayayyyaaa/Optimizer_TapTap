@@ -21,10 +21,10 @@ class Okami:
         self.character = Character(
             name              = "Okami",
             faction           = "Crane",   # à ajuster selon le jeu
-            hp                = 6368_499,
-            atk               = 92_261,
-            defense           = 3_442,
-            spd               = 1_443,
+            hp                = 4_258_154,
+            atk               = 52_924,
+            defense           = 1_920,
+            spd               = 1_296,
             skill_dmg         = 0,
             block             = 0,
             cr                = 0.55,       # Crit Chance = 55 (image avancée)
@@ -37,7 +37,7 @@ class Okami:
             stealth           = 0,
             weapon            = [],
             dragons           = [],
-            pos               = 1,
+            pos               = "back",
         )
         self.immune   = []
         self.character._immune = self.immune
@@ -115,7 +115,7 @@ class Okami:
             damage = w.modify_damage_dealt(self.character, target_char, damage)
 
         # ── Vol d'ATK : 80% de l'ATK de la cible pendant 4 tours ──
-        stolen_atk = getattr(target_char, "atk", 0) * 0.80
+        stolen_atk = getattr(target_char, "atk", 0) * 0.08
         self._steal_atk(target_char, stolen_atk, duration=4)
 
         return damage * self.character.attack_multiplier

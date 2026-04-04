@@ -30,7 +30,7 @@ class Saban:
             stealth           = 0,
             weapon            = [],
             dragons           = [],
-            pos               = 1,
+            pos               = "back",
         )
         self.immune   = []
         self.character._immune = self.immune

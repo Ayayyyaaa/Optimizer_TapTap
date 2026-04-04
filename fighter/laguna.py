@@ -41,10 +41,10 @@ PARALYZE_TYPES = ["stun", "frozen"]   # types de paralyze disponibles dans debuf
 class Laguna:
     """Fighter Laguna."""
 
-    BASE_HP    = 6_368_499
-    BASE_ATK   = 92_261
-    BASE_DEF   = 3_442
-    BASE_SPD   = 1_443
+    BASE_HP    = 3_846_074
+    BASE_ATK   = 65_720
+    BASE_DEF   = 2_784
+    BASE_SPD   = 1_290
     BASE_CR    = 0.15
     BASE_CD    = 1.50
 
@@ -68,7 +68,7 @@ class Laguna:
             stealth            = False,
             weapon             = [],
             dragons            = [],
-            pos                = "front",   # ecrase par fight.py selon le slot
+            pos                = "back",   # ecrase par fight.py selon le slot
         )
 
         # Immunites Paralyze (Strength of the Sea)

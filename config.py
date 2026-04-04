@@ -10,6 +10,7 @@ from fighter.okami import Okami
 from fighter.spekkio import Spekkio
 from fighter.zemus import Zemus
 from fighter.saban import Saban # Ajoute ici tous tes fighters
+from fighter.ruby import Ruby
 
 # ───────────────────────────────────────────────────────────────
 #  POOL DE PERSOS (les 60 disponibles)
@@ -22,13 +23,14 @@ FIGHTER_POOL = [
     Saban, 
     Chancer,
     Laguna,
-    Zemus
+    Zemus,
+    Ruby
 ]
 
 # ───────────────────────────────────────────────────────────────
 #  TAILLE DE L'ÉQUIPE
 # ───────────────────────────────────────────────────────────────
-TEAM_SIZE = 3
+TEAM_SIZE = 5
 
 # ───────────────────────────────────────────────────────────────
 #  INVENTAIRE ARMES
@@ -54,6 +56,7 @@ WEAPON_INVENTORY = [
     Weapon_Spear,
     Weapon_FanAxe,
     Weapon_Tomahawk,
+    Weapon_Bomb
 ]
 
 # ───────────────────────────────────────────────────────────────
@@ -63,14 +66,14 @@ WEAPON_INVENTORY = [
 # ───────────────────────────────────────────────────────────────
 DRAGON_INVENTORY = {
     Zhulong:  2,
-    Yinglong: 1,
-    Yamata:   1,
+    Yinglong: 2,
+    Yamata:   2,
     Naga:     2,
-    Tianlu:   1,
-    Dabei:    2,
+    Tianlu:   2,
+    Dabei:    3,
     Matsu:     3,
     Toronbo:   3,
-    Mingshe:   5,
+    Mingshe:   3,
 }
 
 # ───────────────────────────────────────────────────────────────
@@ -78,11 +81,11 @@ DRAGON_INVENTORY = {
 # ───────────────────────────────────────────────────────────────
 GA_CONFIG = {
     "population_size":  500,    # Individus par génération
-    "generations":      100,    # Nombre de générations
+    "generations":      80,    # Nombre de générations
     "elite_ratio":      0.10,  # Top 10% survivent directement
-    "crossover_ratio":  0.60,  # 60% issus de croisement
+    "crossover_ratio":  0.70,  # 60% issus de croisement
     "mutation_rate":    0.20,  # Probabilité de mutation par gène
-    "simulations":      30,     # Combats simulés par évaluation (vitesse vs précision)
+    "simulations":      100,     # Combats simulés par évaluation (vitesse vs précision)
     "rounds":           10,    # Tours par simulation
     "stagnation_limit": 15,    # Arrêt anticipé si pas d'amélioration après N générations
 }

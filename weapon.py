@@ -291,7 +291,7 @@ class Weapon_Haladie:
     def on_round_start(self, fighter, allies): pass
     def on_basic_attack(self, fighter, dmg):pass
     def on_round_end(self, fighter, allies, round_number):
-        fighter.hp += fighter.max_hp * 0.25
+        fighter.hp += (fighter.max_hp - fighter.hp)* 0.25
     def modify_damage_dealt(self, fighter, target, current_damage): 
         return current_damage
     def on_ally_die(self, fighter, allies):

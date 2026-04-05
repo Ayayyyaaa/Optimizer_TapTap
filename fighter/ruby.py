@@ -236,20 +236,24 @@ class Ruby:
     # ══════════════════════════════════════════════════════════
     #  CUSTOM ENGINE HOOKS (À appeler par ton moteur)
     # ══════════════════════════════════════════════════════════
-    def on_round_end(self, enemies: list, allies: list):
+    def on_round_end(self, allies: list, round_number: int):
         """
-        IMPORTANT : Ton moteur de combat (fight.py) DOIT appeler cette fonction
-        à la fin du round pour que le Dynamite Mark fonctionne !
+        Appelé par fight.py en fin de round.
+        Gère les Dynamite Marks et les callbacks armes/dragons.
         """
+        char = self.character
+        enemies = self._last_enemies_ref
+
+        # ── Dynamite Mark tick ──
         to_remove = []
         for enemy, duration in self._dynamite_marks.items():
             enemy_char = enemy.character if hasattr(enemy, "character") else enemy
-            
+
             if not enemy_char.is_alive:
                 to_remove.append(enemy)
                 continue
 
-            # Check explosion condition (Full Energy, assumée à 100)
+            # Check explosion condition (Full Energy)
             if getattr(enemy_char, "energy", 0) >= 100:
                 self._trigger_dynamite_explosion(enemy, enemies)
                 to_remove.append(enemy)
@@ -261,6 +265,12 @@ class Ruby:
         for e in to_remove:
             if e in self._dynamite_marks:
                 del self._dynamite_marks[e]
+
+        # ── Callbacks armes / dragons ──
+        for w in char.weapon:
+            w.on_round_end(char, allies, round_number)
+        for d in char.dragons:
+            d.on_round_end(char, allies, round_number)
 
     # ══════════════════════════════════════════════════════════
     #  HELPERS PRIVÉS

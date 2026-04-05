@@ -115,7 +115,7 @@ class Okami:
             damage = w.modify_damage_dealt(self.character, target_char, damage)
 
         # ── Vol d'ATK : 80% de l'ATK de la cible pendant 4 tours ──
-        stolen_atk = getattr(target_char, "atk", 0) * 0.08
+        stolen_atk = getattr(target_char, "atk", 0) * 0.80
         self._steal_atk(target_char, stolen_atk, duration=4)
 
         return damage * self.character.attack_multiplier
@@ -154,33 +154,27 @@ class Okami:
     def _steal_atk(self, target_char, amount: float, duration: int):
         """
         Réduit l'ATK de la cible de `amount` et ajoute la même valeur à Okami
-        pendant `duration` tours, puis restitue.
+        pendant `duration` tours, puis restitue automatiquement.
+
+        Chaque ult crée un buff distinct avec son propre delta, ce qui garantit
+        que tick_buffs → remove_buff restitue exactement le bon montant.
         """
-        # Réduction sur la cible (debuff)
+        # Réduction sur la cible
         target_char.atk = max(0, target_char.atk - amount)
 
-        # Buff sur Okami (buff temporaire avec delta exact)
-        buff_key = "werewolf_atk_steal"
-        if has_buff(self.character, buff_key):
-            # Rafraîchit et cumule
-            for b in self.character.buffs:
-                if b["type"] == buff_key:
-                    b["duration"] = duration
-                    b["delta"]   += amount
-                    break
-            self.character.atk += amount
-        else:
-            # Nouveau buff — on bypass BUFF_DEFS pour une valeur dynamique
-            self.character.buffs.append({
-                "type":     buff_key,
-                "duration": duration,
-                "delta":    amount,
-                "source":   self,
-            })
-            self.character.atk += amount
+        # Buff sur Okami avec un identifiant unique par vol pour éviter
+        # d'écraser le delta des vols précédents dans BUFF_DEFS
+        import time
+        buff_key = f"werewolf_steal_{id(self)}_{len(self.character.buffs)}"
 
-        # Mémorise la cible pour restituer à expiration
-        # (géré dans tick_buffs → remove_buff → _apply_buff_stat nécessite stat+delta)
-        # On enregistre la stat pour la restitution automatique
+        # On injecte la définition dans BUFF_DEFS uniquement pour ce buff_key précis
         from debuffs import BUFF_DEFS
         BUFF_DEFS[buff_key] = {"stat": "atk", "delta": amount, "mode": "flat"}
+
+        self.character.buffs.append({
+            "type":     buff_key,
+            "duration": duration,
+            "delta":    amount,
+            "source":   self,
+        })
+        self.character.atk += amount

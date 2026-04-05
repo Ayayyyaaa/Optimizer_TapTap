@@ -99,8 +99,6 @@ class Weapon_Knife:
     
     Fighters concernés : ceux qui ont des debuffs DoT dans leur kit
     (bleeding, poisoned, burning…).
-    
-    NON PERTINENT pour Chancer (pas de DoT dans son kit).
     """
     group = 1
     def __init__(self): self.name = "Knife"
@@ -198,7 +196,7 @@ class Weapon_Bow:
         if self.stacks > 1:
             self.stacks -= 1
         elif self.stacks == 1:
-            fighter.cr -= 60
+            fighter.cr -= 0.60
             self.stacks = 0
     def modify_damage_dealt(self, fighter, target, current_damage): 
         return current_damage
@@ -206,7 +204,7 @@ class Weapon_Bow:
         pass
     def on_ennemy_die(self, fighter, allies):
         self.stacks = 3 
-        fighter.cr += 60
+        fighter.cr += 0.60
     def on_block(self, fighter):
         pass
 
@@ -255,7 +253,7 @@ class Weapon_Knuckles:
     def on_battle_start(self, fighter):pass
     def on_round_start(self, fighter, allies): pass
     def on_basic_attack(self, fighter, dmg):
-        fighter.hp += dmg * 2
+        fighter.hp = min(fighter.max_hp, fighter.hp + dmg * 2)
     def on_round_end(self, fighter, allies, round_number): pass
     def modify_damage_dealt(self, fighter, target, current_damage): 
         return current_damage
@@ -380,15 +378,20 @@ class Weapon_Spear:
     def __init__(self):
         self.name = "Spear"
         self.stacks = 3
+        self._bonus_applied = False
     def on_battle_start(self, fighter):
-        fighter.defense += 0.3
+        # +30% de la défense de base pendant 3 rounds
+        self._defense_bonus = 0.30 * getattr(fighter, "base_defense", fighter.defense)
+        fighter.defense += self._defense_bonus
+        self._bonus_applied = True
     def on_round_start(self, fighter, allies): pass
-    def on_basic_attack(self, fighter, dmg):pass
+    def on_basic_attack(self, fighter, dmg): pass
     def on_round_end(self, fighter, allies, round_number):
         if self.stacks > 0:
             self.stacks -= 1
-            if self.stacks == 0:
-                fighter.defense -= 0.3
+            if self.stacks == 0 and self._bonus_applied:
+                fighter.defense -= self._defense_bonus
+                self._bonus_applied = False
     def modify_damage_dealt(self, fighter, target, current_damage): 
         return current_damage
     def on_ally_die(self, fighter, allies):

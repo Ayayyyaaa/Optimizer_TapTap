@@ -24,19 +24,22 @@
 
 DEBUFF_DEFS = {
     # ── Debuffs de l'image ───────────────────────────────────
-    "bleeding":   {"stat": "block",           "delta": -0.15, "mode": "flat"},
-    "poisoned":   {"stat": "control_resist",  "delta": -0.15, "mode": "flat"},
-    "burning":    {"stat": "defense",         "delta": -0.15, "mode": "percent_base"},
-    "cursed":     {"stat": "heal_effect",     "delta": -0.50, "mode": "flat"},
-    "frozen":     {"stat": "basic_dmg_taken", "delta": +0.20, "mode": "flat"},   # +20% dégâts basic reçus
-    "petrified":  {"stat": "skill_dmg_taken", "delta": +0.10, "mode": "flat"},   # +10% dégâts skill reçus
-    "taunted":    {"stat": "hit_chance",      "delta": -0.15, "mode": "flat"},
-    "stun":       {"stat": None,              "delta":  0,    "mode": "flat"},   # géré séparément (skip tour)
-    "frostbite":  {"stat": None,              "delta":  0,    "mode": "flat"},   # géré dans le calcul de dégâts
+    "bleeding":       {"stat": "block",           "delta": -0.15, "mode": "flat"},
+    "poisoned":       {"stat": "control_resist",  "delta": -0.15, "mode": "flat"},
+    "burning":        {"stat": "defense",         "delta": -0.15, "mode": "percent_base"},
+    "cursed":         {"stat": "heal_effect",     "delta": -0.50, "mode": "flat"},
+    "frozen":         {"stat": "basic_dmg_taken", "delta": +0.20, "mode": "flat"},   # +20% dégâts basic reçus
+    "petrified":      {"stat": "skill_dmg_taken", "delta": +0.10, "mode": "flat"},   # +10% dégâts skill reçus
+    "taunted":        {"stat": "hit_chance",      "delta": -0.15, "mode": "flat"},
+    "stun":           {"stat": None,              "delta":  0,    "mode": "flat"},   # géré séparément (skip tour)
+    "frostbite":      {"stat": None,              "delta":  0,    "mode": "flat"},   # géré dans le calcul de dégâts
     # ── Debuffs supplémentaires utiles ───────────────────────
-    "armor_break":{"stat": "defense",         "delta": -0.25, "mode": "percent_base"},
-    "atk_reduce": {"stat": "atk",             "delta": -0.15, "mode": "percent_base"},
-    "spd_reduce": {"stat": "spd",             "delta": -100,  "mode": "flat"},
+    "armor_break":    {"stat": "defense",         "delta": -0.25, "mode": "percent_base"},
+    "atk_reduce":     {"stat": "atk",             "delta": -0.15, "mode": "percent_base"},
+    "spd_reduce":     {"stat": "spd",             "delta": -100,  "mode": "flat"},
+    # ── Debuffs spécifiques fighters ─────────────────────────
+    "crit_shred":     {"stat": "cr",              "delta": -0.35, "mode": "flat"},        # Saban basic
+    "armor_reduction":{"stat": "defense",         "delta": -0.40, "mode": "percent_base"},# Saban ult
 }
 
 CONTROL_DEBUFFS = {"stun", "frozen"}   # debuffs qui empêchent d'agir

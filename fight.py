@@ -55,7 +55,10 @@ def _run_once(team_build: dict, nb_rounds: int) -> float:
             w.on_battle_start(char)
         for d in char.dragons:
             d.on_battle_start(char)
-        # Hook fighter (Laguna, Chancer, etc.)
+
+    # Hook fighter APRÈS armes/dragons (Laguna, Chancer, Ruby, Zemus…)
+    # Les passifs de battle_start peuvent dépendre des stats boostées par armes/dragons
+    for f in fighters:
         if hasattr(f, "battle_start"):
             f.battle_start(allies, enemies)
 
@@ -91,6 +94,18 @@ def _run_once(team_build: dict, nb_rounds: int) -> float:
                 total_dmg += f.ult(enemies, allies)
             else:
                 total_dmg += f.basic_atk(enemies, allies)
+
+        # 3. Tour du boss (dummy en fight.py = pas d'attaque, HP quasi infini)
+        # On simule quand même un on_block si le fighter a du block
+        # afin d'activer les armes qui ont on_block (ex: Kunai)
+        for f in fighters:
+            char = f.character
+            if not char.is_alive:
+                continue
+            block_chance = max(0.0, getattr(char, "block", 0.0))
+            if block_chance > 0 and __import__("random").random() < block_chance:
+                for w in char.weapon:
+                    w.on_block(char)
 
         # 3. Round end — armes, dragons, fighter si hook défini
         for f in fighters:

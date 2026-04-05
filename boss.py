@@ -164,15 +164,15 @@ class BossDefault(Boss):
     def __init__(self):
         super().__init__(
             name        = "Training Dummy",
-            faction     = "Howler",
-            hp          = 50_000_000,
-            atk         = 45_000,
+            faction     = "Crane",
+            hp          = 9_999_999_999,
+            atk         = 1_000,
             defense     = 800,
             spd         = 800,
             cr          = 0.15,
             cd          = 1.50,
             hit_chance  = 0.85,
-            dmg_reduce  = 0.05,
+            dmg_reduce  = 0,
             atk_pattern = [
                 {"name": "Slash",      "multiplier": 1.5, "aoe": False, "debuffs": []},
                 {"name": "Heavy Blow", "multiplier": 2.2, "aoe": False,

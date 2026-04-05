@@ -2,6 +2,7 @@
 #  CONFIG.PY  —  Inventaire du joueur & pool de personnages
 # ═══════════════════════════════════════════════════════════════
 
+from boss import BossDefault, BossAOE, BossStunner
 from fighter.chancer import Chancer
 from fighter.laguna import Laguna
 from weapon import *
@@ -80,12 +81,21 @@ DRAGON_INVENTORY = {
 #  PARAMÈTRES ALGORITHME GÉNÉTIQUE
 # ───────────────────────────────────────────────────────────────
 GA_CONFIG = {
-    "population_size":  500,    # Individus par génération
+    "population_size":  250,    # Individus par génération
     "generations":      80,    # Nombre de générations
     "elite_ratio":      0.10,  # Top 10% survivent directement
     "crossover_ratio":  0.70,  # 60% issus de croisement
     "mutation_rate":    0.20,  # Probabilité de mutation par gène
-    "simulations":      100,     # Combats simulés par évaluation (vitesse vs précision)
+    "simulations":      50,     # Combats simulés par évaluation (vitesse vs précision)
     "rounds":           10,    # Tours par simulation
     "stagnation_limit": 15,    # Arrêt anticipé si pas d'amélioration après N générations
 }
+
+# ───────────────────────────────────────────────────────────────
+#  BOSS CIBLE DE L'OPTIMISATION
+#  Change cette ligne pour optimiser contre un boss différent :
+#    BossDefault  → Training Dummy (Howler, attaques basiques)
+#    BossAOE      → Warlord       (Kodiak, AoE + debuffs)
+#    BossStunner  → Mindbreaker   (Crane, contrôle intensif)
+# ───────────────────────────────────────────────────────────────
+TARGET_BOSS = BossDefault

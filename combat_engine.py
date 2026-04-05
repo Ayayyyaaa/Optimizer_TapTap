@@ -99,6 +99,10 @@ def run_combat(
                 continue
 
             # Choix attaque (ult ou basic)
+            # IMPORTANT : les méthodes basic_atk/ult des fighters retournent
+            # le raw damage SANS l'appliquer sur le boss (c'est boss.take_damage
+            # qui applique armor, dmg_reduce, etc.).
+            # Les fighters NE doivent PAS modifier boss.hp directement.
             if char.energy >= 100:
                 char.energy = 0
                 raw_dmg = f.ult(enemies, allies)
@@ -107,8 +111,7 @@ def run_combat(
                 raw_dmg = f.basic_atk(enemies, allies)
                 is_skill = False
 
-            # Application des dégâts sur le boss
-            # (basic_atk / ult retournent le raw_dmg ; on applique la formule ici)
+            # Application des dégâts sur le boss via la formule centralisée
             final_dmg = boss.take_damage(raw_dmg, char, is_skill=is_skill)
             total_dmg_to_boss += final_dmg
 
@@ -122,6 +125,16 @@ def run_combat(
             boss_dmg = boss.act(allies)
             if verbose and boss_dmg > 0:
                 print(f"  [BOSS {boss.name}] attaque → {boss_dmg:,.0f} dégâts total")
+            # on_block : si un fighter a bloqué (boss.act applique block_chance),
+            # on déclenche les armes. On recheck ici de façon probabiliste.
+            for f in allies:
+                char = f.character
+                if not char.is_alive:
+                    continue
+                block_chance = max(0.0, getattr(char, "block", 0.0))
+                if block_chance > 0 and random.random() < block_chance:
+                    for w in char.weapon:
+                        w.on_block(char)
 
         # 4. Round end : tick debuffs + callbacks armes/dragons
         for f in allies:

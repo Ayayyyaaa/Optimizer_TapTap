@@ -25,10 +25,10 @@ import random
 import copy
 from collections import Counter
 from multiprocessing import Pool, cpu_count
-from fight import simulate_team
+from combat_engine import simulate_team
 from config import (
     FIGHTER_POOL, TEAM_SIZE, WEAPON_INVENTORY,
-    DRAGON_INVENTORY, GA_CONFIG
+    DRAGON_INVENTORY, GA_CONFIG, TARGET_BOSS
 )
 
 # ── Pré-calculs globaux (faits une seule fois) ────────────────
@@ -99,6 +99,7 @@ class Genome:
             self.to_team_build(),
             nb_rounds=cfg["rounds"],
             nb_simulations=cfg["simulations"],
+            boss_cls=TARGET_BOSS,
         )
         return self.fitness
 
@@ -435,6 +436,7 @@ def run_genetic_optimizer():
     print(f"\n{'═'*60}")
     print(f"  OPTIMISEUR GÉNÉTIQUE — Tap Force")
     print(f"{'═'*60}")
+    print(f"  Boss cible    : {TARGET_BOSS().name}")
     print(f"  Population : {pop_size}  |  Générations : {generations}")
     print(f"  CPU utilisés : {nb_cpus}  |  Sims/éval : {cfg['simulations']}")
     print(f"  Fighters pool : {len(FIGHTER_POOL)}  |  Équipe : {TEAM_SIZE} persos")

@@ -193,6 +193,7 @@ class Chancer:
             total_dmg += dmg
 
             for w in char.weapon:
+                dmg += w.modify_damage_dealt(char, target_char, dmg)
                 w.on_basic_attack(char, dmg)
 
             if random.random() < 0.20:
@@ -240,6 +241,8 @@ class Chancer:
             target_char.hp -= dmg
             if target_char.hp <= 0:
                 target_char.is_alive = False
+            for w in char.weapon:
+                dmg = w.modify_damage_dealt(char, target_char, dmg)
             total_dmg += dmg
 
         # ── Effets selon parité ───────────────────────────────
@@ -252,7 +255,7 @@ class Chancer:
             base_frostbite = char.atk * 3.50
             for target in targets: # <--- CORRIGÉ : On itère sur le nombre de coups !
                 target_char = getattr(target, "character", target)
-                apply_debuff(target_char, "frostbite", duration=3, source=self)
+                apply_debuff(target_char, "frostbite", duration=3, source=self,dot_multiplier=3.50)
                 dmg = self._apply_debuff_damage(base_frostbite, target_char)
                 target_char.hp -= dmg
                 if target_char.hp <= 0:
@@ -264,7 +267,7 @@ class Chancer:
             base_curse = char.atk * 3.50
             for target in targets: # <--- CORRIGÉ : On itère sur le nombre de coups !
                 target_char = getattr(target, "character", target)
-                apply_debuff(target_char, "cursed", duration=3, source=self)
+                apply_debuff(target_char, "cursed", duration=3, source=self,dot_multiplier=3.50)
                 dmg = self._apply_debuff_damage(base_curse, target_char)
                 target_char.hp -= dmg
                 if target_char.hp <= 0:

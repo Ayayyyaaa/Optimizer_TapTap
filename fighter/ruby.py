@@ -287,13 +287,14 @@ class Ruby:
         return max(0.0, raw_dmg)
 
     def _apply_row_buff(self, allies, stat, value, duration):
-        """Applique un buff à Ruby et aux alliés de sa rangée."""
-        my_pos = getattr(self.character, "position", "front")
+        my_pos = getattr(self.character, "pos", "front")
         for ally in allies:
             ally_char = ally.character if hasattr(ally, "character") else ally
-            if getattr(ally_char, "position", "front") == my_pos:
-                # Bypass le dictionnaire BUFF_DEFS en l'appliquant directement avec un custom flag
-                apply_buff(ally_char, f"trigger_happy_{stat}", duration=duration, delta_override=value, source=self)
+            if getattr(ally_char, "pos", "front") == my_pos:
+                setattr(ally_char, stat, getattr(ally_char, stat, 0) + value)
+                # Buff marqueur pour que tick_buffs puisse retirer au bon moment
+                apply_buff(ally_char, f"trigger_happy_{stat}", duration=duration,
+                        delta_override=value, source=self)
 
     def _on_skill_crit(self, allies):
         """P3 : Déclenché lors d'un coup critique pendant l'ult."""
@@ -314,7 +315,7 @@ class Ruby:
         burn_base = self.character.atk * 2.50
         for e in alive_enemies:
             e_char = e.character if hasattr(e, "character") else e
-            apply_debuff(e_char, "burn", duration=3, source=self)
+            apply_debuff(e_char, "burn", duration=3, source=self, dot_multiplier=5)
             # Applique directement le dégat de Burn (ou laisse le tick du moteur gérer selon ton archi)
             e_char.hp -= burn_base
             if e_char.hp <= 0: e_char.is_alive = False

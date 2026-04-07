@@ -1,12 +1,5 @@
 # ═══════════════════════════════════════════════════════════════
-#  FIGHTER_OKAMI.PY  —  Okami
-# ═══════════════════════════════════════════════════════════════
-#
-#  Skills :
-#   • Lust for Blood  (Passive #1) : HP +55%, Crit Chance +40%, SPD +80
-#   • Fresh Meat      (Passive #2) : Si basic attack = crit → self-heal 600% ATK
-#   • Last One Standing (Passive #3) : Par allié mort → +40% base ATK & +40% Crit pour le reste du combat
-#   • Werewolf Form   (Active/ULT)  : 1500% dmg sur cible aléatoire + vole 80% de son ATK pendant 4 tours
+#  OKAMI.PY  —  Fighter : Okami
 # ═══════════════════════════════════════════════════════════════
 
 import random
@@ -16,18 +9,21 @@ from debuffs import apply_debuff, apply_buff, remove_buff, has_buff, tick_buffs
 
 class Okami:
     def __init__(self):
-        # ── Stats de base (image : HP 6368499, ATK 92261, DEF 3442, SPD 1443) ──
-        # On prend les stats MAX (barre pleine) visibles dans l'image
+        # ── Stats de base SANS les passifs ───────────────────
+        # BUG FIX : Les bonus de "Lust for Blood" (HP×1.55, CR+0.40, SPD+80)
+        # étaient appliqués à l'__init__, ce qui gonflait les stats de base
+        # utilisées par les dragons (base_atk, etc.) et s'accumulait si
+        # l'instance était réutilisée. Ils sont maintenant dans battle_start().
         self.character = Character(
             name              = "Okami",
-            faction           = "Crane",   # à ajuster selon le jeu
+            faction           = "Crane",
             hp                = 4_258_154,
             atk               = 52_924,
             defense           = 1_920,
             spd               = 1_296,
             skill_dmg         = 0,
             block             = 0,
-            cr                = 0.55,       # Crit Chance = 55 (image avancée)
+            cr                = 0.55,
             cd                = 1.8,
             dmg_reduce        = 0,
             control_resist    = 0,
@@ -43,16 +39,23 @@ class Okami:
         self.character._immune = self.immune
         self.position = 1
 
-        # Compteur interne d'alliés morts (pour Last One Standing)
         self._allies_dead = 0
 
-        # ── Passive #1 : Lust for Blood (appliquée au battle start) ──
-        # HP +55%, CR +40%, SPD +80 → appliqués dans on_battle_start via weapon/dragon
-        # On les applique directement ici à l'init pour que les stats soient correctes
-        self.character.max_hp  = int(self.character.max_hp * 1.55)
-        self.character.hp      = self.character.max_hp
-        self.character.cr     += 0.40
-        self.character.spd    += 80
+    # ═══════════════════════════════════════════════════════════
+    #  BATTLE START — Lust for Blood (P1)
+    # ═══════════════════════════════════════════════════════════
+    def battle_start(self, allies: list, enemies: list):
+        """
+        BUG FIX : les bonus de Lust for Blood sont appliqués ici,
+        APRÈS que les dragons ont boosté base_atk (ordre correct dans fight.py).
+        Ainsi base_atk est déjà gonflé par les dragons quand on applique ×1.55 HP,
+        et les bonus ne s'accumulent pas entre simulations.
+        """
+        char = self.character
+        char.max_hp  = int(char.max_hp * 1.55)
+        char.hp      = char.max_hp
+        char.cr     += 0.40
+        char.spd    += 80
 
     # ═══════════════════════════════════════════════════════════
     #  ATTAQUE DE BASE
@@ -71,7 +74,7 @@ class Okami:
             self.on_crit()
             damage = base_damage * self.character.cd
 
-            # ── Passive #2 : Fresh Meat — heal 600% ATK on crit basic ──
+            # Fresh Meat (P2) : heal 600% ATK on crit basic
             heal = self.character.atk * 6.0
             self.character.hp = min(self.character.max_hp, self.character.hp + heal)
 
@@ -79,7 +82,6 @@ class Okami:
         else:
             damage = base_damage
 
-        # Modificateurs d'armes
         for w in self.character.weapon:
             damage = w.modify_damage_dealt(self.character, target_char, damage)
             w.on_basic_attack(self.character, damage)
@@ -90,11 +92,6 @@ class Okami:
     #  ULT : Werewolf Form
     # ═══════════════════════════════════════════════════════════
     def ult(self, enemies: list, allies: list) -> float:
-        """
-        Werewolf Form :
-        - 1500% dégâts sur une cible aléatoire (skill damage → appliqué via skill_dmg)
-        - Vole 80% de l'ATK de la cible pendant 4 tours
-        """
         if not enemies:
             return 0.0
 
@@ -106,15 +103,13 @@ class Okami:
         target      = random.choice(alive_enemies)
         target_char = target.character if hasattr(target, "character") else target
 
-        # ── 1500% ATK, amplifié par skill_dmg ──
         damage = self.character.atk * 15.0
         damage *= (1.0 + self.character.skill_dmg)
 
-        # Armes
         for w in self.character.weapon:
             damage = w.modify_damage_dealt(self.character, target_char, damage)
 
-        # ── Vol d'ATK : 80% de l'ATK de la cible pendant 4 tours ──
+        # Vol d'ATK : 80% de l'ATK de la cible pendant 4 tours
         stolen_atk = getattr(target_char, "atk", 0) * 0.80
         self._steal_atk(target_char, stolen_atk, duration=4)
 
@@ -122,12 +117,13 @@ class Okami:
 
     # ═══════════════════════════════════════════════════════════
     #  PASSIVE #3 : Last One Standing
-    #  Appelé par combat_engine via on_ally_die des weapons/dragons
-    #  → On l'expose ici pour que combat_engine puisse l'appeler
     # ═══════════════════════════════════════════════════════════
     def on_ally_die(self, allies: list):
         """
-        Pour chaque allié qui meurt : +40% base ATK & +40% CR, permanent.
+        BUG FIX : ce hook était bien déclaré mais fight.py ne le déclenchait
+        jamais car le dummy ne mourrait jamais. Avec combat_engine.py (boss réel),
+        le boss attaque et peut tuer des alliés → le hook s'active correctement.
+        Aucune correction de code ici, le bug était côté moteur (voir fight.py fix).
         """
         self._allies_dead += 1
         self.character.atk += 0.40 * self.character.base_atk
@@ -137,14 +133,13 @@ class Okami:
     #  HELPERS
     # ═══════════════════════════════════════════════════════════
     def on_crit(self):
-        pass  # Pas de mécanique supplémentaire sur crit pour Okami (hors Fresh Meat)
+        pass
 
     def _pick_target(self, enemies):
         alive = [e for e in enemies
                  if getattr(e.character if hasattr(e, "character") else e, "is_alive", True)]
         if not alive:
             return enemies[0]
-        # Position 1-3 : cible le plus fort en ATK
         if 1 <= self.position <= 3:
             return max(alive, key=lambda e: getattr(
                 e.character if hasattr(e, "character") else e, "atk", 0))
@@ -152,22 +147,10 @@ class Okami:
             e.character if hasattr(e, "character") else e, "hp", 0))
 
     def _steal_atk(self, target_char, amount: float, duration: int):
-        """
-        Réduit l'ATK de la cible de `amount` et ajoute la même valeur à Okami
-        pendant `duration` tours, puis restitue automatiquement.
-
-        Chaque ult crée un buff distinct avec son propre delta, ce qui garantit
-        que tick_buffs → remove_buff restitue exactement le bon montant.
-        """
-        # Réduction sur la cible
         target_char.atk = max(0, target_char.atk - amount)
 
-        # Buff sur Okami avec un identifiant unique par vol pour éviter
-        # d'écraser le delta des vols précédents dans BUFF_DEFS
-        import time
         buff_key = f"werewolf_steal_{id(self)}_{len(self.character.buffs)}"
 
-        # On injecte la définition dans BUFF_DEFS uniquement pour ce buff_key précis
         from debuffs import BUFF_DEFS
         BUFF_DEFS[buff_key] = {"stat": "atk", "delta": amount, "mode": "flat"}
 

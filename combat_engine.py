@@ -2,15 +2,12 @@
 #  COMBAT_ENGINE.PY  —  Moteur de combat réaliste
 # ═══════════════════════════════════════════════════════════════
 #
-#  Remplace l'ancien simulate_team / _run_once.
-#  Intègre :
-#    - Boss qui attaque chaque tour (pattern configurable)
-#    - Réduction d'armure (formula armor / armor+K)
-#    - True damage (bypass armor + dmg_reduce)
-#    - Block chance pour les alliés
-#    - Debuffs avec durée (tick en fin de round)
-#    - Bonus de faction : +30% dégâts & +15% hit_chance si faction favorable
-#    - hit_chance vs evasion
+#  BUG FIX (DoT / Knife) :
+#    tick_debuffs() retourne maintenant les dégâts DoT infligés
+#    ce round. Ces dégâts sont accumulés dans total_dmg_to_boss
+#    afin que l'optimiseur voie leur contribution réelle.
+#    Weapon_Knife multiplie ces dégâts × 3 automatiquement via
+#    modify_dot_damage(), appelé dans tick_debuffs().
 # ═══════════════════════════════════════════════════════════════
 
 import random
@@ -19,37 +16,24 @@ from boss import Boss, BossDefault, _apply_incoming_damage
 from data import factions as FACTION_COUNTER
 
 
-# ═══════════════════════════════════════════════════════════════
-#  POINT D'ENTRÉE PRINCIPAL
-# ═══════════════════════════════════════════════════════════════
-
 def run_combat(
     fighters:       list,
     boss:           Boss  = None,
     nb_rounds:      int   = 10,
-    verbose:        bool  = False,
+    verbose:        bool  = True,
 ) -> float:
-    """
-    Simule un combat complet et retourne les dégâts totaux infligés au boss.
-
-    fighters  : liste d'objets fighter (avec .character)
-    boss      : instance de Boss (BossDefault si None)
-    nb_rounds : nombre de tours
-    verbose   : affiche les logs détaillés
-    """
     if boss is None:
         boss = BossDefault()
 
     allies  = fighters
-    enemies = [boss]   # interface commune avec l'ancien code
+    enemies = [boss]
 
     # ── Battle start ─────────────────────────────────────────
     for f in allies:
         char = f.character
-        # Bonus de faction vs boss
         if FACTION_COUNTER.get(char.faction) == boss.faction:
             char.hit_chance = getattr(char, "hit_chance", 0.15) + 0.15
-            char._faction_hit_bonus = True   # flag pour retirer le bonus à la fin
+            char._faction_hit_bonus = True
         else:
             char._faction_hit_bonus = False
 
@@ -58,6 +42,11 @@ def run_combat(
         for d in char.dragons:
             d.on_battle_start(char)
 
+    # Hook battle_start fighters (après armes/dragons)
+    for f in allies:
+        if hasattr(f, "battle_start"):
+            f.battle_start(allies, enemies)
+
     total_dmg_to_boss = 0.0
 
     # ── Boucle de combat ─────────────────────────────────────
@@ -65,7 +54,7 @@ def run_combat(
         if verbose:
             print(f"\n──── Round {round_num} ────")
 
-        # 1. Round start (armes, dragons)
+        # 1. Round start
         for f in allies:
             if not f.character.is_alive:
                 continue
@@ -73,8 +62,15 @@ def run_combat(
                 w.on_round_start(f.character, allies)
             for d in f.character.dragons:
                 d.on_round_start(f.character, allies)
+            if hasattr(f, "on_round_start"):
+                f.on_round_start(allies)
+            if hasattr(f, "on_orb_attack") and f.character.is_alive:
+                orb_dmg = f.on_orb_attack(enemies)
+                if orb_dmg > 0:
+                    final_orb = boss.take_damage(orb_dmg, f.character, is_skill=False)
+                    total_dmg_to_boss += final_orb
 
-        # 2. Actions des fighters (ordre : spd décroissant)
+        # 2. Actions des fighters
         acting_fighters = sorted(
             [f for f in allies if f.character.is_alive],
             key=lambda f: f.character.spd,
@@ -92,26 +88,20 @@ def run_combat(
             if not boss.is_alive:
                 break
 
-            # Vérification hit_chance
             if not _roll_hit(char):
                 if verbose:
                     print(f"  [{char.name}] rate son attaque !")
                 continue
 
-            # Choix attaque (ult ou basic)
-            # IMPORTANT : les méthodes basic_atk/ult des fighters retournent
-            # le raw damage SANS l'appliquer sur le boss (c'est boss.take_damage
-            # qui applique armor, dmg_reduce, etc.).
-            # Les fighters NE doivent PAS modifier boss.hp directement.
             if char.energy >= 100:
                 char.energy = 0
-                raw_dmg = f.ult(enemies, allies)
+                raw_dmg  = f.ult(enemies, allies)
                 is_skill = True
             else:
-                raw_dmg = f.basic_atk(enemies, allies)
+                char.energy+=50
+                raw_dmg  = f.basic_atk(enemies, allies)
                 is_skill = False
 
-            # Application des dégâts sur le boss via la formule centralisée
             final_dmg = boss.take_damage(raw_dmg, char, is_skill=is_skill)
             total_dmg_to_boss += final_dmg
 
@@ -125,8 +115,6 @@ def run_combat(
             boss_dmg = boss.act(allies)
             if verbose and boss_dmg > 0:
                 print(f"  [BOSS {boss.name}] attaque → {boss_dmg:,.0f} dégâts total")
-            # on_block : si un fighter a bloqué (boss.act applique block_chance),
-            # on déclenche les armes. On recheck ici de façon probabiliste.
             for f in allies:
                 char = f.character
                 if not char.is_alive:
@@ -136,32 +124,39 @@ def run_combat(
                     for w in char.weapon:
                         w.on_block(char)
 
-        # 4. Round end : tick debuffs + callbacks armes/dragons
+        # 4. Round end : tick debuffs + callbacks
+        # BUG FIX : tick_debuffs retourne les dégâts DoT infligés au boss.
+        # On les ajoute à total_dmg_to_boss pour que l'optimiseur valorise
+        # les armes et fighters qui posent des DoT (ex: Knife sur Chancer).
+        dot_dmg_on_boss = tick_debuffs(boss)
+        total_dmg_to_boss += dot_dmg_on_boss
+
         for f in allies:
             char = f.character
-            tick_debuffs(char)
+            tick_debuffs(char)   # dégâts DoT sur les alliés (boss attaque)
             tick_buffs(char)
             for w in char.weapon:
                 w.on_round_end(char, allies, round_num)
             for d in char.dragons:
                 d.on_round_end(char, allies, round_num)
-        tick_debuffs(boss)
+            if hasattr(f, "on_round_end"):
+                f.on_round_end(allies, round_num)
 
-        # 5. Vérification morts
+        tick_buffs(boss)
         for f in allies:
             if f.character.hp <= 0 and f.character.is_alive:
                 f.character.is_alive = False
                 if verbose:
                     print(f"  [{f.character.name}] est mort !")
-                # Callbacks dragon/arme/fighter sur mort d'allié
+                if hasattr(f, "on_self_death"):
+                    f.on_self_death(allies)
                 for other in allies:
                     if other.character.is_alive:
                         for w in other.character.weapon:
                             w.on_ally_die(other.character, allies)
                         for d in other.character.dragons:
                             d.on_ally_die(other.character, allies)
-                        # Passive fighter (ex: Last One Standing d'Okami)
-                        if hasattr(other, 'on_ally_die'):
+                        if hasattr(other, "on_ally_die"):
                             other.on_ally_die(allies)
 
     # ── Nettoyage bonus faction ───────────────────────────────
@@ -172,44 +167,28 @@ def run_combat(
     return total_dmg_to_boss
 
 
-# ═══════════════════════════════════════════════════════════════
-#  HELPERS
-# ═══════════════════════════════════════════════════════════════
-
 def _roll_hit(char) -> bool:
-    """
-    Vérifie si l'attaque du fighter touche.
-    hit_chance = 0.15 par défaut = 15% de chance de RATER.
-    Ici on l'interprète comme : rand < (1 - hit_chance) → miss.
-    """
     miss_chance = max(0.0, getattr(char, "hit_chance", 0.15))
     return random.random() >= miss_chance
 
 
-# ═══════════════════════════════════════════════════════════════
-#  WRAPPER POUR L'OPTIMISEUR (remplace simulate_team)
-# ═══════════════════════════════════════════════════════════════
-
 def simulate_team(team_build: dict, nb_rounds: int = 10, nb_simulations: int = 8,
                   boss_cls=None) -> float:
-    """
-    Interface compatible avec optimizer.py.
-    team_build : dict {idx: {"fighter_cls", "weapons", "dragons"}}
-    boss_cls   : classe Boss à instancier (BossDefault si None)
-    """
     if boss_cls is None:
         boss_cls = BossDefault
 
     total = 0.0
     for _ in range(nb_simulations):
         fighters = []
-        for slot in team_build.values():
+        for slot_idx, slot in team_build.items():
             f = slot["fighter_cls"]()
-            f.character.weapon  = [w() for w in slot["weapons"]]
-            f.character.dragons = [d(f.character) for d in slot["dragons"]]
+            f.character.weapon    = [w() for w in slot["weapons"]]
+            f.character.dragons   = [d(f.character) for d in slot["dragons"]]
+            # La position est définie par le génome (slots 0-2 = front, 3-5 = back)
+            f.character.position  = slot.get("position", "front" if slot_idx < 3 else "back")
             fighters.append(f)
 
-        boss = boss_cls()
+        boss  = boss_cls()
         total += run_combat(fighters, boss, nb_rounds=nb_rounds, verbose=False)
 
     return total / nb_simulations

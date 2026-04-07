@@ -12,6 +12,14 @@ from fighter.spekkio import Spekkio
 from fighter.zemus import Zemus
 from fighter.saban import Saban # Ajoute ici tous tes fighters
 from fighter.ruby import Ruby
+from fighter.teepo import Teepo  
+from fighter.zura import Zura
+from fighter.scythe import Scythe
+from fighter.necro import Necro
+from fighter.terryx import Terryx
+from fighter.otto import Otto
+from fighter.komodo import Komodo
+from fighter.leene import Leene
 
 # ───────────────────────────────────────────────────────────────
 #  POOL DE PERSOS (les 60 disponibles)
@@ -25,13 +33,21 @@ FIGHTER_POOL = [
     Chancer,
     Laguna,
     Zemus,
-    Ruby
+    Ruby,
+    Teepo, 
+    Zura,
+    Scythe,
+    Necro,
+    Terryx,
+    Otto,
+    Komodo,
+    Leene,
 ]
 
 # ───────────────────────────────────────────────────────────────
 #  TAILLE DE L'ÉQUIPE
 # ───────────────────────────────────────────────────────────────
-TEAM_SIZE = 5
+TEAM_SIZE = 6
 
 # ───────────────────────────────────────────────────────────────
 #  INVENTAIRE ARMES
@@ -81,14 +97,14 @@ DRAGON_INVENTORY = {
 #  PARAMÈTRES ALGORITHME GÉNÉTIQUE
 # ───────────────────────────────────────────────────────────────
 GA_CONFIG = {
-    "population_size":  250,    # Individus par génération
-    "generations":      80,    # Nombre de générations
-    "elite_ratio":      0.10,  # Top 10% survivent directement
-    "crossover_ratio":  0.70,  # 60% issus de croisement
-    "mutation_rate":    0.20,  # Probabilité de mutation par gène
-    "simulations":      50,     # Combats simulés par évaluation (vitesse vs précision)
-    "rounds":           10,    # Tours par simulation
-    "stagnation_limit": 15,    # Arrêt anticipé si pas d'amélioration après N générations
+    "population_size":  250,   # ↓ de 500 : le cache compense
+    "generations":      175,   # ↑ de 120 : arrêt anticipé protège
+    "elite_ratio":      0.10,  # ↓ de 0.15 : moins de deepcopy
+    "crossover_ratio":  0.65,  # ↑ léger
+    "mutation_rate":    0.20,  # ↓ de 0.25 : moins de réparations
+    "simulations":      30,   # ↓ de 150 : le cache rattrape
+    "rounds":           10,
+    "stagnation_limit": 25,    # ↓ de 20 : économise ~5 générations inutiles
 }
 
 # ───────────────────────────────────────────────────────────────

@@ -223,7 +223,7 @@ class Zemus:
 
             # 75% chance Curse 3 tours + 400% ATK dégâts maudits
             if random.random() < 0.75:
-                applied = apply_debuff(target_char, "cursed", duration=3, source=self)
+                applied = apply_debuff(target_char, "cursed", duration=3, source=self, dot_multiplier=4)
                 if applied:
                     curse_dmg = char.atk * 4.0   # 400%
                     # Amplifié par les armes qui ont modify_dot_damage (ex: Knife)
@@ -247,6 +247,11 @@ class Zemus:
                 apply_debuff(ec, "taunted",      duration=3, source=self)   # proxy hit_chance -15%
                 # CR -25% : on réduit directement (pas de debuff dédié)
                 ec.cr = max(0.0, ec.cr - 0.25)
+
+        self._cursed_enemies_count = sum(
+            1 for e in enemies
+            if has_debuff(getattr(e, "character", e), "cursed")
+        )
 
         return total_dmg
 
@@ -286,9 +291,8 @@ class Zemus:
             )[:2]
             for ally in sorted_allies:
                 ac = ally.character
-                if not has_debuff(ac, "cd_boost_zemus"):
-                    apply_buff(ac, "skill_dmg_up", duration=5, source=self)  # proxy CD boost
-                    ac.cd += 0.50
+                apply_buff(ac, "skill_dmg_up", duration=5, source=self)  # proxy CD boost
+                ac.cd += 0.50
 
         # Callbacks armes / dragons
         for w in char.weapon:

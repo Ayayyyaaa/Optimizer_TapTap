@@ -126,8 +126,6 @@ class Laguna:
 
         raw = char.atk * char.attack_multiplier
         dmg = self._calc_damage(char, raw, is_skill=False)
-
-        target_char.hp -= dmg
         if target_char.hp <= 0:
             target_char.is_alive = False
 
@@ -162,8 +160,6 @@ class Laguna:
             raw = char.atk * char.attack_multiplier * 3.50   # 350%
             raw *= (1.0 + char.skill_dmg)
             dmg  = self._calc_damage(char, raw, is_skill=True)
-
-            target_char.hp -= dmg
             if target_char.hp <= 0:
                 target_char.is_alive = False
             total_dmg += dmg
@@ -195,6 +191,11 @@ class Laguna:
                     apply_buff(ac, "skill_dmg_laguna", duration=4,
                                delta_override=0.50, source=self)
                     ac.skill_dmg += 0.50
+                else:
+                    for b in ac.buffs:
+                        if b["type"] == "skill_dmg_laguna":
+                            b["duration"] = 4
+                            break
 
         # ── Soins alliés meme rangee (500% ATK) ───────────────
         healable = [a for a in allies

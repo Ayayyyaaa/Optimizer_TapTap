@@ -21,10 +21,10 @@ class Spekkio:
             72514,     # atk
             2884,      # defense
             1173,      # spd
-            1,         # skill_dmg
+            0,         # skill_dmg
             0,         # block
-            1.25,      # cr  (125% → plafonné à 100% dans les rolls)
-            1.3,         # cd
+            0.25,      # cr  (125% → plafonné à 100% dans les rolls)
+            1.25,         # cd
             1,         # dmg_reduce
             0.5,       # control_resist
             0.15,      # hit_chance  (miss chance)
@@ -97,6 +97,7 @@ class Spekkio:
         total_damage = 0.0
         for _ in range(num_attacks):
             hit_dmg = self.character.atk * 4.00
+            hit_dmg *= (1.0 + self.character.skill_dmg)   # BUG FIX : skill_dmg ignoré
             if random.random() < min(1.0, self.character.cr + bonus_cr):
                 self.on_crit()
                 hit_dmg *= self.character.cd
@@ -110,7 +111,7 @@ class Spekkio:
     # ── Passive Shell Shockwave ───────────────────────────────
     def _passif1(self, enemies):
         if self.character.energy >= 100:
-            self.character.atk += 1.10 * self.character.base_atk
+            self.character.atk += 0.10 * self.character.base_atk
             for enemy in enemies:
                 target_char = enemy.character if hasattr(enemy, "character") else enemy
                 if getattr(target_char, "is_alive", True):

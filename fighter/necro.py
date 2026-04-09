@@ -126,8 +126,6 @@ class Necro:
             # Bonus Dark Corruption : +20% dégâts reçus
             if has_debuff(target_char, "dark_corruption"):
                 dmg *= 1.20
-
-            target_char.hp -= dmg
             total_dmg += dmg
 
             if target_char.hp <= 0:
@@ -138,7 +136,6 @@ class Necro:
             apply_debuff(target_char, "cursed", duration=3, source=self, dot_multiplier=1.25)
             # 125% ATK Curse damage immédiat
             curse_dmg = char.atk * 1.25
-            target_char.hp -= curse_dmg
             total_dmg += curse_dmg
             if target_char.hp <= 0 and target_char.is_alive:
                 target_char.hp       = 0
@@ -182,8 +179,6 @@ class Necro:
             # Bonus Dark Corruption : +20% dégâts reçus
             if has_debuff(target_char, "dark_corruption"):
                 dmg *= 1.20
-
-            target_char.hp -= dmg
             total_dmg += dmg
 
             if target_char.hp <= 0:

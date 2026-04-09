@@ -114,7 +114,6 @@ class Otto:
         dmg  = self._calc_damage(char, raw)
 
         was_killing_blow = False
-        target_char.hp -= dmg
         if target_char.hp <= 0:
             target_char.hp       = 0
             target_char.is_alive = False
@@ -165,7 +164,6 @@ class Otto:
             if is_crit:
                 any_crit = True
 
-            target_char.hp -= dmg
             total_dmg      += dmg
 
             if target_char.hp <= 0:

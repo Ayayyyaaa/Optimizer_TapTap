@@ -141,8 +141,6 @@ class Leene:
 
         raw = char.atk * char.attack_multiplier * 2.00
         dmg = self._calc_damage(char, raw)
-
-        target_char.hp -= dmg
         if target_char.hp <= 0:
             target_char.hp       = 0
             target_char.is_alive = False
@@ -196,7 +194,6 @@ class Leene:
             # Le moteur appelle boss.take_damage sur la valeur retournée par ult().
             # Pour vraiment ignorer l'armure il faudrait un flag côté boss,
             # mais on retourne les dégâts bruts ici — à gérer si boss a armor logic.
-            target_char.hp -= dmg
             total_dmg += dmg
 
             was_killing_blow = target_char.hp <= 0

@@ -146,7 +146,6 @@ class Zura:
         raw = char.atk * char.attack_multiplier * 2.0
         dmg = self._calc_damage(char, raw)
 
-        target_char.hp -= dmg
         if target_char.hp <= 0:
             target_char.is_alive = False
 
@@ -194,7 +193,6 @@ class Zura:
             raw = char.atk * char.attack_multiplier * 2.0
             raw *= (1.0 + char.skill_dmg)
             dmg  = self._calc_damage(char, raw)
-            target_char.hp -= dmg
             if target_char.hp <= 0:
                 target_char.is_alive = False
             total_dmg += dmg

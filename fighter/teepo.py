@@ -120,8 +120,6 @@ class Teepo:
 
         raw = char.atk * char.attack_multiplier * 2.50
         dmg = self._calc_damage(char, raw)
-
-        target_char.hp -= dmg
         if target_char.hp <= 0:
             target_char.is_alive = False
 
@@ -165,7 +163,6 @@ class Teepo:
             raw *= (1.0 + char.skill_dmg)
             dmg  = self._calc_damage(char, raw)
 
-            target_char.hp -= dmg
             total_dmg += dmg
 
             if target_char.hp <= 0:
@@ -179,7 +176,6 @@ class Teepo:
                     # passent par modify_dot_damage() pour Knife etc.
                     poison_dmg = char.atk * 3.50
                     poison_dmg = self._apply_dot_damage(poison_dmg)
-                    target_char.hp -= poison_dmg
                     total_dmg += poison_dmg
                     if target_char.hp <= 0 and target_char.is_alive:
                         target_char.is_alive = False

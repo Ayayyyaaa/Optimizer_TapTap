@@ -108,8 +108,6 @@ class Komodo:
 
         raw = char.atk * char.attack_multiplier * 2.00
         dmg = self._calc_damage(char, raw, is_basic=True)
-
-        target_char.hp -= dmg
         if target_char.hp <= 0:
             target_char.hp       = 0
             target_char.is_alive = False
@@ -158,8 +156,6 @@ class Komodo:
             raw = char.atk * char.attack_multiplier * 7.50
             raw *= (1.0 + char.skill_dmg)
             dmg  = self._calc_damage(char, raw, is_basic=False)
-
-            target_char.hp -= dmg
             total_dmg += dmg
 
             if target_char.hp <= 0:

@@ -241,7 +241,6 @@ class Scythe:
                 raw *= char.cd
 
             dmg = self._calc_damage(target_char, raw, bypass_crit=True)
-            target_char.hp -= dmg
             total_dmg      += dmg
 
             was_kill = target_char.hp <= 0

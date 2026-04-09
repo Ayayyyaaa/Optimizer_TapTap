@@ -27,7 +27,16 @@ def run_combat(
 
     allies  = fighters
     enemies = [boss]
+    team = False
 
+    # ── Tracker de dégâts par fighter ────────────────────────
+    # Structure : { nom : {"direct": 0, "dot": 0, "orb": 0} }
+    dmg_tracker: dict[str, dict[str, float]] = {
+        f.character.name: {"direct": 0.0, "dot": 0.0, "orb": 0.0}
+        for f in allies
+    }
+    if team:
+        print(f"fighters: {[f.character.name for f in allies]}, boss: {boss.name}")
     # ── Battle start ─────────────────────────────────────────
     for f in allies:
         char = f.character
@@ -69,6 +78,7 @@ def run_combat(
                 if orb_dmg > 0:
                     final_orb = boss.take_damage(orb_dmg, f.character, is_skill=False)
                     total_dmg_to_boss += final_orb
+                    dmg_tracker[f.character.name]["orb"] += final_orb
 
         # 2. Actions des fighters
         acting_fighters = sorted(
@@ -88,22 +98,19 @@ def run_combat(
             if not boss.is_alive:
                 break
 
-            if not _roll_hit(char):
-                if verbose:
-                    print(f"  [{char.name}] rate son attaque !")
-                continue
-
             if char.energy >= 100:
                 char.energy = 0
                 raw_dmg  = f.ult(enemies, allies)
                 is_skill = True
             else:
-                char.energy+=50
                 raw_dmg  = f.basic_atk(enemies, allies)
                 is_skill = False
-
+                char.energy += 50
+            if not _roll_hit(char):
+                raw_dmg *= 0.5
             final_dmg = boss.take_damage(raw_dmg, char, is_skill=is_skill)
             total_dmg_to_boss += final_dmg
+            dmg_tracker[char.name]["direct"] += final_dmg
 
             if verbose:
                 skill_label = "ULT" if is_skill else "Basic"
@@ -125,15 +132,23 @@ def run_combat(
                         w.on_block(char)
 
         # 4. Round end : tick debuffs + callbacks
-        # BUG FIX : tick_debuffs retourne les dégâts DoT infligés au boss.
-        # On les ajoute à total_dmg_to_boss pour que l'optimiseur valorise
-        # les armes et fighters qui posent des DoT (ex: Knife sur Chancer).
+        # Les dégâts DoT sur le boss sont attribués à leur source (fighter).
+        # tick_debuffs() retourne le total DoT du round ; on reventile
+        # par debuff via une boucle sur boss.debuffs AVANT le tick.
+        dot_per_source = _collect_dot_sources(boss)
         dot_dmg_on_boss = tick_debuffs(boss)
         total_dmg_to_boss += dot_dmg_on_boss
 
+        # Ventilation des dégâts DoT vers chaque fighter source
+        if dot_dmg_on_boss > 0 and dot_per_source:
+            total_weight = sum(dot_per_source.values())
+            for name, weight in dot_per_source.items():
+                if name in dmg_tracker and total_weight > 0:
+                    dmg_tracker[name]["dot"] += dot_dmg_on_boss * (weight / total_weight)
+
         for f in allies:
             char = f.character
-            tick_debuffs(char)   # dégâts DoT sur les alliés (boss attaque)
+            tick_debuffs(char)
             tick_buffs(char)
             for w in char.weapon:
                 w.on_round_end(char, allies, round_num)
@@ -163,8 +178,59 @@ def run_combat(
     for f in allies:
         if getattr(f.character, "_faction_hit_bonus", False):
             f.character.hit_chance -= 0.15
+    
+    if verbose:
+        _print_dmg_breakdown(dmg_tracker, total_dmg_to_boss, nb_rounds)
 
-    return total_dmg_to_boss
+    return total_dmg_to_boss, dmg_tracker
+
+
+def _collect_dot_sources(boss: Boss) -> dict[str, float]:
+    """
+    Parcourt les debuffs actifs sur le boss AVANT le tick et retourne,
+    pour chaque fighter source, le poids DoT qu'il représente ce round
+    (atk_source × dot_multiplier). Utilisé pour ventiler les dégâts DoT.
+    """
+    sources: dict[str, float] = {}
+    for debuff in boss.debuffs:
+        multi = debuff.get("dot_multiplier")
+        if multi is None:
+            continue
+        source = debuff.get("source")
+        source_char = getattr(source, "character", source) if source else None
+        name = getattr(source_char, "name", None) or getattr(source, "name", "?")
+        atk  = getattr(source_char, "atk", 0.0) if source_char else 0.0
+        sources[name] = sources.get(name, 0.0) + atk * multi
+    return sources
+
+
+def _print_dmg_breakdown(
+    tracker:   dict[str, dict[str, float]],
+    total:     float,
+    nb_rounds: int,
+):
+    """Affiche un tableau récapitulatif des dégâts par fighter."""
+    print(f"\n{'═'*62}")
+    print(f"  BREAKDOWN DES DÉGÂTS ({nb_rounds} rounds)")
+    print(f"{'═'*62}")
+    print(f"  {'Perso':<14} {'Direct':>14} {'DoT':>12} {'Orb':>10} {'Total':>13} {'%':>6}")
+    print(f"  {'─'*14} {'─'*14} {'─'*12} {'─'*10} {'─'*13} {'─'*6}")
+
+    rows = []
+    for name, d in tracker.items():
+        fighter_total = d["direct"] + d["dot"] + d["orb"]
+        rows.append((name, d["direct"], d["dot"], d["orb"], fighter_total))
+
+    rows.sort(key=lambda r: r[4], reverse=True)
+
+    for name, direct, dot, orb, ftotal in rows:
+        pct = (ftotal / total * 100) if total > 0 else 0.0
+        print(f"  {name:<14} {direct:>14,.0f} {dot:>12,.0f} {orb:>10,.0f} "
+              f"{ftotal:>13,.0f} {pct:>5.1f}%")
+
+    print(f"  {'─'*14} {'─'*14} {'─'*12} {'─'*10} {'─'*13} {'─'*6}")
+    print(f"  {'TOTAL':<14} {'':<14} {'':<12} {'':<10} {total:>13,.0f} {'100.0':>5}%")
+    print(f"{'═'*62}\n")
 
 
 def _roll_hit(char) -> bool:
@@ -189,6 +255,48 @@ def simulate_team(team_build: dict, nb_rounds: int = 10, nb_simulations: int = 8
             fighters.append(f)
 
         boss  = boss_cls()
-        total += run_combat(fighters, boss, nb_rounds=nb_rounds, verbose=False)
+        dmg, _ = run_combat(fighters, boss, nb_rounds=nb_rounds, verbose=False)
+        total += dmg
 
     return total / nb_simulations
+
+
+def simulate_team_with_breakdown(team_build: dict, nb_rounds: int = 10,
+                                  nb_simulations: int = 8, boss_cls=None
+                                  ) -> tuple[float, dict[str, dict[str, float]]]:
+    """
+    Comme simulate_team, mais retourne aussi le breakdown de dégâts moyen par fighter.
+    Structure retournée : (fitness_moyenne, {nom: {"direct": x, "dot": x, "orb": x}})
+    """
+    if boss_cls is None:
+        boss_cls = BossDefault
+
+    total = 0.0
+    merged: dict[str, dict[str, float]] = {}
+
+    for _ in range(nb_simulations):
+        fighters = []
+        for slot_idx, slot in team_build.items():
+            f = slot["fighter_cls"]()
+            f.character.weapon   = [w() for w in slot["weapons"]]
+            f.character.dragons  = [d(f.character) for d in slot["dragons"]]
+            f.character.position = slot.get("position", "front" if slot_idx < 3 else "back")
+            fighters.append(f)
+
+        boss = boss_cls()
+        run_total, tracker = run_combat(fighters, boss, nb_rounds=nb_rounds, verbose=False)
+        total += run_total
+
+        for name, d in tracker.items():
+            if name not in merged:
+                merged[name] = {"direct": 0.0, "dot": 0.0, "orb": 0.0}
+            merged[name]["direct"] += d["direct"]
+            merged[name]["dot"]    += d["dot"]
+            merged[name]["orb"]    += d["orb"]
+
+    # Moyenne sur les simulations
+    for name in merged:
+        for k in merged[name]:
+            merged[name][k] /= nb_simulations
+
+    return total / nb_simulations, merged

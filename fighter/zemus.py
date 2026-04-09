@@ -146,9 +146,8 @@ class Zemus:
                 if not has_debuff(char, "hit_bonus_zemus"):
                     apply_buff(char, "skill_dmg_up", duration=3, source=self)    # proxy : on utilise skill_dmg_up comme marqueur
                     char.hit_chance = max(0.0, char.hit_chance - 0.30)           # hit_chance = miss_chance → réduire = plus précis
-                dmg = 0.0
+                dmg *= 0.5
             else:
-                target_char.hp -= dmg
                 total_dmg += dmg
 
                 # Réduction Block normale (-10% pendant 5 rounds) via proxy bleeding
@@ -212,7 +211,6 @@ class Zemus:
             if getattr(target_char, "faction", "") == "Griffin":
                 dmg *= 1.50
 
-            target_char.hp -= dmg
             total_dmg += dmg
 
             was_killing_blow = target_char.hp <= 0
@@ -230,7 +228,6 @@ class Zemus:
                     for w in char.weapon:
                         if hasattr(w, "modify_dot_damage"):
                             curse_dmg = w.modify_dot_damage(char, curse_dmg)
-                    target_char.hp -= curse_dmg
                     total_dmg += curse_dmg
                     if target_char.hp <= 0 and target_char.is_alive:
                         target_char.hp       = 0

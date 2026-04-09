@@ -187,14 +187,15 @@ class Chancer:
             target_char = getattr(target, "character", target)
             raw = char.atk * char.attack_multiplier * 2.0
             dmg = self._calc_damage(char, target_char, raw, is_skill=False)
-            target_char.hp -= dmg
+
+            # BUG FIX : modify_damage_dealt appliqué AVANT d'infliger + accumuler,
+            # et avec = au lieu de += (sinon les dégâts étaient doublés).
+            for w in char.weapon:
+                dmg = w.modify_damage_dealt(char, target_char, dmg)
+                w.on_basic_attack(char, dmg)
             if target_char.hp <= 0:
                 target_char.is_alive = False
             total_dmg += dmg
-
-            for w in char.weapon:
-                dmg += w.modify_damage_dealt(char, target_char, dmg)
-                w.on_basic_attack(char, dmg)
 
             if random.random() < 0.20:
                 apply_debuff(target_char, "stun", duration=2, source=self)
@@ -222,12 +223,8 @@ class Chancer:
         is_odd  = (dice % 2 == 1)
         is_even = (dice % 2 == 0)
 
-        # ── Sélection des cibles ──────────────────────────────
-        if len(alive_enemies) == 1:
-            targets = [alive_enemies[0]] * dice
-        else:
-            nb_targets = min(dice, len(alive_enemies))
-            targets = random.sample(alive_enemies, nb_targets)
+        nb_targets = min(dice, len(alive_enemies))
+        targets = random.sample(alive_enemies, nb_targets)
 
         # ── Dégâts principaux (550% ou 650% si even) ──────────
         base_mult = 5.50 + (1.00 if is_even else 0.0)
@@ -238,7 +235,6 @@ class Chancer:
             raw = char.atk * char.attack_multiplier * base_mult
             raw *= (1.0 + char.skill_dmg)
             dmg  = self._calc_damage(char, target_char, raw, is_skill=True)
-            target_char.hp -= dmg
             if target_char.hp <= 0:
                 target_char.is_alive = False
             for w in char.weapon:
@@ -255,9 +251,11 @@ class Chancer:
             base_frostbite = char.atk * 3.50
             for target in targets: # <--- CORRIGÉ : On itère sur le nombre de coups !
                 target_char = getattr(target, "character", target)
-                apply_debuff(target_char, "frostbite", duration=3, source=self,dot_multiplier=3.50)
+                dot_multiplier = 3.50
+                if nb_targets == 1:
+                    dot_multiplier *= dice
+                apply_debuff(target_char, "frostbite", duration=3, source=self,dot_multiplier=dot_multiplier)
                 dmg = self._apply_debuff_damage(base_frostbite, target_char)
-                target_char.hp -= dmg
                 if target_char.hp <= 0:
                     target_char.is_alive = False
                 total_dmg += dmg
@@ -267,9 +265,11 @@ class Chancer:
             base_curse = char.atk * 3.50
             for target in targets: # <--- CORRIGÉ : On itère sur le nombre de coups !
                 target_char = getattr(target, "character", target)
-                apply_debuff(target_char, "cursed", duration=3, source=self,dot_multiplier=3.50)
+                dot_multiplier = 3.50
+                if nb_targets == 1:
+                    dot_multiplier *= dice
+                apply_debuff(target_char, "cursed_chancer", duration=3, source=self,dot_multiplier=dot_multiplier)
                 dmg = self._apply_debuff_damage(base_curse, target_char)
-                target_char.hp -= dmg
                 if target_char.hp <= 0:
                     target_char.is_alive = False
                 total_dmg += dmg
@@ -286,6 +286,8 @@ class Chancer:
             for e in back_enemies:
                 apply_debuff(getattr(e, "character", e), "atk_reduce", duration=2, source=self)
 
+        if nb_targets == 1:
+            total_dmg *= dice
         return total_dmg
 
     # ══════════════════════════════════════════════════════════

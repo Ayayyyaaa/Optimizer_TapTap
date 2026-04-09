@@ -1,7 +1,3 @@
-# ═══════════════════════════════════════════════════════════════
-#  CONFIG.PY  —  Inventaire du joueur & pool de personnages
-# ═══════════════════════════════════════════════════════════════
-
 from boss import BossDefault, BossAOE, BossStunner
 from fighter.chancer import Chancer
 from fighter.laguna import Laguna
@@ -20,6 +16,7 @@ from fighter.terryx import Terryx
 from fighter.otto import Otto
 from fighter.komodo import Komodo
 from fighter.leene import Leene
+from combat_engine import simulate_team
 
 # ───────────────────────────────────────────────────────────────
 #  POOL DE PERSOS (les 60 disponibles)
@@ -93,25 +90,34 @@ DRAGON_INVENTORY = {
     Mingshe:   3,
 }
 
-# ───────────────────────────────────────────────────────────────
-#  PARAMÈTRES ALGORITHME GÉNÉTIQUE
-# ───────────────────────────────────────────────────────────────
-GA_CONFIG = {
-    "population_size":  200,   # ↓ de 500 : le cache compense #250
-    "generations":      175,   # ↑ de 120 : arrêt anticipé protège
-    "elite_ratio":      0.10,  # ↓ de 0.15 : moins de deepcopy
-    "crossover_ratio":  0.65,  # ↑ léger
-    "mutation_rate":    0.20,  # ↓ de 0.25 : moins de réparations
-    "simulations":      40,   # ↓ de 150 : le cache rattrape #75
-    "rounds":           10,
-    "stagnation_limit": 10,    # ↓ de 20 : économise ~5 générations inutiles
-}
+myteam = {
+        0: {"fighter_cls": Zura, "weapons": [Weapon_Knuckles, Weapon_Cobra, Weapon_Dart], "dragons": [Tianlu, Yamata]},
+        1: {"fighter_cls": Ruby, "weapons": [Weapon_Pipe, Weapon_Bomb, Weapon_Bow], "dragons": [Toronbo, Matsu]},
+        2: {"fighter_cls": Zemus, "weapons": [Weapon_Sai, Weapon_Shuriken, Weapon_Spear], "dragons": [Yamata, Naga]},
+        3: {"fighter_cls": Spekkio, "weapons": [Weapon_Nunchucks, Weapon_Katana, Weapon_Katar], "dragons": [Zhulong, Yinglong]},
+        4: {"fighter_cls": Laguna, "weapons": [Weapon_Kusarigama, Weapon_Haladie, Weapon_Claw], "dragons": [Toronbo, Mingshe]},
+        5: {"fighter_cls": Chancer, "weapons": [Weapon_Knife, Weapon_Kunai, Weapon_Khopesh], "dragons": [Naga, Dabei]},
+    }
+team = {
+        0: {"fighter_cls": Zura, "weapons": [Weapon_Kusarigama, Weapon_Cobra, Weapon_Kunai], "dragons": [Zhulong, Naga]},
+        1: {"fighter_cls": Chancer, "weapons": [Weapon_Katar, Weapon_Katana, Weapon_Khopesh], "dragons": [Toronbo, Matsu]},
+        2: {"fighter_cls": Zemus, "weapons": [Weapon_Knife, Weapon_Haladie, Weapon_FanAxe], "dragons": [Toronbo, Dabei]},
+        3: {"fighter_cls": Terryx, "weapons": [Weapon_Nunchucks, Weapon_Dart, Weapon_Claw], "dragons": [Toronbo, Yinglong]},
+        4: {"fighter_cls": Laguna, "weapons": [Weapon_Knuckles, Weapon_Bow, Weapon_Bomb], "dragons": [Yamata, Mingshe]},
+        5: {"fighter_cls": Teepo, "weapons": [Weapon_Sai, Weapon_Shuriken, Weapon_Tomahawk], "dragons": [Zhulong, Yinglong]},
+    }
+teamtest = {
+        0: {"fighter_cls": Zura, "weapons": [Weapon_Kusarigama, Weapon_Cobra, Weapon_Kunai], "dragons": [Zhulong, Naga]},
+        1: {"fighter_cls": Terryx, "weapons": [Weapon_Knuckles, Weapon_Dart, Weapon_Claw], "dragons": [Toronbo, Yinglong]},
+        2: {"fighter_cls": Zemus, "weapons": [Weapon_Knife, Weapon_Haladie, Weapon_FanAxe], "dragons": [Toronbo, Dabei]},
+        3: {"fighter_cls": Chancer, "weapons": [Weapon_Knife, Weapon_Kunai, Weapon_Khopesh], "dragons": [Naga, Yinglong]},
+        4: {"fighter_cls": Laguna, "weapons": [Weapon_Knuckles, Weapon_Bow, Weapon_Bomb], "dragons": [Yamata, Mingshe]},
+        5 :{"fighter_cls": Spekkio, "weapons": [Weapon_Katar, Weapon_Katana, Weapon_Nunchucks], "dragons": [Toronbo, Matsu]},
+    }
 
-# ───────────────────────────────────────────────────────────────
-#  BOSS CIBLE DE L'OPTIMISATION
-#  Change cette ligne pour optimiser contre un boss différent :
-#    BossDefault  → Training Dummy (Howler, attaques basiques)
-#    BossAOE      → Warlord       (Kodiak, AoE + debuffs)
-#    BossStunner  → Mindbreaker   (Crane, contrôle intensif)
-# ───────────────────────────────────────────────────────────────
-TARGET_BOSS = BossDefault
+simulate_team(
+    myteam,
+    nb_rounds=10,
+    nb_simulations=50,
+    boss_cls=BossDefault
+)

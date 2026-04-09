@@ -12,7 +12,7 @@ import random
 import copy
 from collections import Counter
 from multiprocessing import Pool, cpu_count
-from combat_engine import simulate_team
+from combat_engine import simulate_team, simulate_team_with_breakdown
 from config import (
     FIGHTER_POOL, TEAM_SIZE, WEAPON_INVENTORY,
     DRAGON_INVENTORY, GA_CONFIG, TARGET_BOSS
@@ -474,6 +474,14 @@ def _tournament_select(population: list, k: int = 4) -> Genome:
 
 
 def _print_results(best: Genome):
+    cfg = GA_CONFIG
+    _, breakdown = simulate_team_with_breakdown(
+        best.to_team_build(),
+        nb_rounds=cfg["rounds"],
+        nb_simulations=cfg["simulations"],
+        boss_cls=TARGET_BOSS,
+    )
+
     print(f"\n{'='*60}")
     print(f"  MEILLEUR BUILD TROUVÉ — {best.fitness:,.0f} DPS moyen")
     print(f"{'='*60}")
@@ -481,13 +489,21 @@ def _print_results(best: Genome):
     for row_label, row_slots in [("▶  LIGNE AVANT  (positions 1-3)", range(0, 3)),
                                   ("▶  LIGNE ARRIÈRE (positions 4-6)", range(3, TEAM_SIZE))]:
         print(f"\n  {row_label}")
-        print(f"  {'─'*50}")
+        print(f"  {'-'*50}")
         for i in row_slots:
             slot        = best.slots[i]
             fighter_cls = FIGHTER_POOL[slot["fighter_idx"]]
             weapons     = [WEAPON_INVENTORY[wi]().name for wi in slot["weapon_idxs"]]
             dragons     = [DRAGON_POOL[di].__name__ for di in slot["dragon_idxs"]]
-            print(f"\n    Slot {i+1} → {fighter_cls.__name__}")
+            name        = fighter_cls.__name__
+            dmg         = breakdown.get(name, {})
+            direct      = dmg.get("direct", 0.0)
+            dot         = dmg.get("dot",    0.0)
+            orb         = dmg.get("orb",    0.0)
+            total_f     = direct + dot + orb
+            pct         = (total_f / best.fitness * 100) if best.fitness > 0 else 0.0
+            print(f"\n    Slot {i+1} → {name}  ({total_f:,.0f} dmg — {pct:.1f}%)")
+            print(f"      Direct  : {direct:>15,.0f}  |  DoT : {dot:>15,.0f}  |  Orb : {orb:>15,.0f}")
             print(f"      Armes   : {' | '.join(weapons)}")
             print(f"      Dragons : {' | '.join(dragons)}")
 

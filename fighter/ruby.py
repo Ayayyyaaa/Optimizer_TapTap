@@ -142,8 +142,6 @@ class Ruby:
         # On suppose 250% ATK de base comme la majorité des persos
         raw = self.character.atk * self.character.attack_multiplier * 2.50
         dmg = self._calc_damage(target_char, raw)
-
-        target_char.hp -= dmg
         if target_char.hp <= 0:
             target_char.is_alive = False
 
@@ -199,8 +197,6 @@ class Ruby:
                 self._on_skill_crit(allies)
 
             dmg = self._calc_damage(target_char, raw, bypass_crit=True) # Crit déjà géré au dessus
-            
-            target_char.hp -= dmg
             if target_char.hp <= 0:
                 target_char.is_alive = False
             total_dmg += dmg

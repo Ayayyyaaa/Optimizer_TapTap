@@ -186,7 +186,7 @@ class BossAOE(Boss):
     def __init__(self):
         super().__init__(
             name        = "Warlord",
-            faction     = "Kodiak",
+            faction     = "Cobra",
             hp          = 80_000_000,
             atk         = 60_000,
             defense     = 1200,

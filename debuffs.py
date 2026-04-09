@@ -62,7 +62,16 @@ CONTROL_DEBUFFS = {"stun", "frozen"}
 
 
 def apply_debuff(character, debuff_type: str, duration: int, source=None, dot_multiplier: float = None) -> bool:
+    """
+    Applique un debuff sur le personnage.
 
+    Règle de stacking :
+    - Debuff DoT (dot_multiplier fourni) : TOUJOURS une nouvelle instance,
+      même si le même type existe déjà (ex: Chancer + Zemus appliquent
+      chacun leur propre "cursed" ; Chancer réapplique frostbite → x2 dmg).
+    - Debuff de stat pur (dot_multiplier=None) : une seule instance par type,
+      on refresh seulement la durée (pour éviter un double malus de stat).
+    """
     immune_list = getattr(character, "_immune", [])
     if debuff_type in immune_list:
         return False
@@ -73,21 +82,32 @@ def apply_debuff(character, debuff_type: str, duration: int, source=None, dot_mu
         if resist_roll < resist_value:
             return False
 
+    # ── Debuff DoT : toujours empiler ────────────────────────
+    if dot_multiplier is not None:
+        already_exists = any(d["type"] == debuff_type for d in character.debuffs)
+        character.debuffs.append({
+            "type":           debuff_type,
+            "duration":       duration,
+            "source":         source,
+            "dot_multiplier": dot_multiplier,
+        })
+        # L'effet de stat (ex: frostbite → +20% basic_dmg_taken) n'est appliqué
+        # qu'une seule fois, à la première instance.
+        if not already_exists:
+            _apply_stat_effect(character, debuff_type, apply=True)
+        return True
+
+    # ── Debuff de stat pur : une seule instance, refresh durée ───
     for existing in character.debuffs:
         if existing["type"] == debuff_type:
             existing["duration"] = max(existing["duration"], duration)
-            # Met à jour le multi si le nouveau est plus fort
-            if dot_multiplier is not None:
-                existing["dot_multiplier"] = max(
-                    existing.get("dot_multiplier") or 0, dot_multiplier
-                )
             return True
 
     character.debuffs.append({
         "type":           debuff_type,
         "duration":       duration,
         "source":         source,
-        "dot_multiplier": dot_multiplier,  # None = pas de DoT
+        "dot_multiplier": None,
     })
     _apply_stat_effect(character, debuff_type, apply=True)
     if debuff_type == "stun":
@@ -96,11 +116,24 @@ def apply_debuff(character, debuff_type: str, duration: int, source=None, dot_mu
 
 
 def remove_debuff(character, debuff_type: str):
-    character.debuffs = [d for d in character.debuffs if d["type"] != debuff_type]
-    _apply_stat_effect(character, debuff_type, apply=False)
+    """
+    Retire UNE instance du debuff (la première expirée trouvée).
+    L'effet de stat n'est reversé que quand la DERNIÈRE instance disparaît.
+    """
+    # Compte les instances avant suppression
+    instances = [d for d in character.debuffs if d["type"] == debuff_type]
+    if not instances:
+        return
 
-    if debuff_type == "stun":
-        character.is_stunned = False
+    # Retire la première instance trouvée
+    character.debuffs.remove(instances[0])
+
+    # Ne reverser l'effet de stat que si c'était la dernière instance
+    remaining = [d for d in character.debuffs if d["type"] == debuff_type]
+    if not remaining:
+        _apply_stat_effect(character, debuff_type, apply=False)
+        if debuff_type == "stun":
+            character.is_stunned = False
 
 
 def tick_debuffs(character):
@@ -114,12 +147,14 @@ def tick_debuffs(character):
         source_char = getattr(source, "character", source) if source else None
         source_atk  = getattr(source_char, "atk", 0.0) if source_char else 0.0
         source_weapons = getattr(source_char, "weapon", []) if source_char else []
-
+        #print(f"{character.name} takes DoT from {debuff['type']} from {source_char.name} (multi={multi:.2f}, source_atk={source_atk:.2f})")
         base_dot = source_atk * multi
 
         for w in source_weapons:
             if hasattr(w, "modify_dot_damage"):
+                #print(f"{source_char.name} dot damage before {w.__class__.__name__}: {base_dot:.2f}")
                 base_dot = w.modify_dot_damage(source_char, base_dot)
+                #print(f"{source_char.name} dot damage after {w.__class__.__name__}: {base_dot:.2f}")
 
         character.hp      -= base_dot
         total_dot_dmg     += base_dot

@@ -16,7 +16,7 @@ from fighter.terryx import Terryx
 from fighter.otto import Otto
 from fighter.komodo import Komodo
 from fighter.leene import Leene
-from combat_engine import simulate_team
+from combat_engine import simulate_team, simulate_team_with_breakdown
 
 # ───────────────────────────────────────────────────────────────
 #  POOL DE PERSOS (les 60 disponibles)
@@ -94,7 +94,7 @@ myteam = {
         0: {"fighter_cls": Zura, "weapons": [Weapon_Knuckles, Weapon_Cobra, Weapon_Dart], "dragons": [Tianlu, Yamata]},
         1: {"fighter_cls": Ruby, "weapons": [Weapon_Pipe, Weapon_Bomb, Weapon_Bow], "dragons": [Toronbo, Matsu]},
         2: {"fighter_cls": Zemus, "weapons": [Weapon_Sai, Weapon_Shuriken, Weapon_Spear], "dragons": [Yamata, Naga]},
-        3: {"fighter_cls": Spekkio, "weapons": [Weapon_Nunchucks, Weapon_Katana, Weapon_Katar], "dragons": [Zhulong, Yinglong]},
+        3: {"fighter_cls": Spekkio, "weapons": [Weapon_Nunchucks, Weapon_Katana, Weapon_Katar], "dragons": [Zhulong, Naga]},
         4: {"fighter_cls": Laguna, "weapons": [Weapon_Kusarigama, Weapon_Haladie, Weapon_Claw], "dragons": [Toronbo, Mingshe]},
         5: {"fighter_cls": Chancer, "weapons": [Weapon_Knife, Weapon_Kunai, Weapon_Khopesh], "dragons": [Naga, Dabei]},
     }
@@ -108,16 +108,16 @@ team = {
     }
 teamtest = {
         0: {"fighter_cls": Zura, "weapons": [Weapon_Kusarigama, Weapon_Cobra, Weapon_Kunai], "dragons": [Zhulong, Naga]},
-        1: {"fighter_cls": Terryx, "weapons": [Weapon_Knuckles, Weapon_Dart, Weapon_Claw], "dragons": [Toronbo, Yinglong]},
+        1: {"fighter_cls": Terryx, "weapons": [Weapon_Knuckles, Weapon_Bow, Weapon_Claw], "dragons": [Yamata, Zhulong]},
         2: {"fighter_cls": Zemus, "weapons": [Weapon_Knife, Weapon_Haladie, Weapon_FanAxe], "dragons": [Toronbo, Dabei]},
         3: {"fighter_cls": Chancer, "weapons": [Weapon_Knife, Weapon_Kunai, Weapon_Khopesh], "dragons": [Naga, Yinglong]},
-        4: {"fighter_cls": Laguna, "weapons": [Weapon_Knuckles, Weapon_Bow, Weapon_Bomb], "dragons": [Yamata, Mingshe]},
-        5 :{"fighter_cls": Spekkio, "weapons": [Weapon_Katar, Weapon_Katana, Weapon_Nunchucks], "dragons": [Toronbo, Matsu]},
+        4: {"fighter_cls": Laguna, "weapons": [Weapon_Knuckles, Weapon_Dart, Weapon_Bomb], "dragons": [Toronbo, Mingshe]},
+        5 :{"fighter_cls": Spekkio, "weapons": [Weapon_Katar, Weapon_Katana, Weapon_Nunchucks], "dragons": [Yinglong, Zhulong]},
     }
 
 simulate_team(
-    myteam,
+    teamtest,
     nb_rounds=10,
-    nb_simulations=50,
+    nb_simulations=1,
     boss_cls=BossDefault
 )

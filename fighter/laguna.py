@@ -33,6 +33,7 @@
 import random
 from character import Character
 from debuffs import apply_debuff, apply_buff, has_buff, tick_buffs
+from muta import Mutagen
 
 
 PARALYZE_TYPES = ["stun", "frozen"]   # types de paralyze disponibles dans debuffs.py
@@ -69,7 +70,11 @@ class Laguna:
             weapon             = [],
             dragons            = [],
             pos                = "back",   # ecrase par fight.py selon le slot
+            mutagen            = Mutagen(self, "S"),
         )
+        self.character.mutagen.apply()
+        self.character.mutagen.perk1()
+        self.character.mutagen.perk2()
 
         # Immunites Paralyze (Strength of the Sea)
         self.character._immune = ["stun", "frozen", "paralyze"]

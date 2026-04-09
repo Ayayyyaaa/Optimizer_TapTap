@@ -39,6 +39,7 @@
 import random
 from character import Character
 from debuffs import apply_debuff, has_debuff, apply_buff, remove_debuff
+from muta import Mutagen
 
 
 class Zemus:
@@ -72,7 +73,11 @@ class Zemus:
             weapon             = [],
             dragons            = [],
             pos                = "back",
+            mutagen            = Mutagen(self, "E"),
         )
+        self.character.mutagen.apply()
+        self.character.mutagen.perk1()
+        self.character.mutagen.perk2()
 
         # Immunité Curse (Death Machine P1)
         self.character._immune = ["cursed"]

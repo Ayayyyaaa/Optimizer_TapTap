@@ -4,7 +4,7 @@
 
 class Character:
     def __init__(self, name, faction, hp, atk, defense, spd, skill_dmg,
-                 block, cr, cd, dmg_reduce, control_resist, hit_chance,
+                 block, cr, cd, dmg_reduce, control_resist, hit_chance, mutagen,
                  armor_break, control_precision, stealth, weapon, dragons, pos):
 
         self.name       = name
@@ -30,7 +30,7 @@ class Character:
         self.stealth    = stealth
         self.weapon     = weapon
         self.dragons    = dragons
-
+        self.mutagen = mutagen
         self.buffs      = []
         self.debuffs    = []
         self.energy     = 50
@@ -47,3 +47,4 @@ class Character:
 
         # Liste d'immunités (remplie par le fighter)
         self._immune    = []
+        

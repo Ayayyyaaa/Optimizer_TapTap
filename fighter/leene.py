@@ -38,6 +38,7 @@
 import random
 from character import Character
 from debuffs import apply_debuff, apply_buff, remove_buff, has_buff
+from muta import Mutagen
 
 
 class Leene:
@@ -72,7 +73,12 @@ class Leene:
             weapon             = [],
             dragons            = [],
             pos                = "back",
+            mutagen            = Mutagen(self, "E"),  
         )
+        self.character.mutagen.apply()
+        self.character.mutagen.perk1()
+        self.character.mutagen.perk2()
+
 
         # Immunités (Shadow Body P1)
         self.character._immune = ["stun"]

@@ -33,6 +33,7 @@
 import random
 from character import Character
 from debuffs import apply_debuff, has_debuff, apply_buff, remove_buff
+from muta import Mutagen
 
 
 
@@ -70,7 +71,11 @@ class Otto:
             weapon             = [],
             dragons            = [],
             pos                = "front",
+            mutagen            = Mutagen(self, "E"),
         )
+        self.character.mutagen.apply()
+        self.character.mutagen.perk1()
+        self.character.mutagen.perk2()
 
         # Immunités (Apex Striker P1)
         self.character._immune = ["bleeding", "spd_reduce"]

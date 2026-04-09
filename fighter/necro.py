@@ -28,6 +28,7 @@
 import random
 from character import Character
 from debuffs import apply_debuff, has_debuff, apply_buff
+from muta import Mutagen
 
 class Necro:
     """Fighter Necro."""
@@ -63,7 +64,11 @@ class Necro:
             weapon            = [],
             dragons           = [],
             pos               = "back",
+            mutagen            = Mutagen(self, "E"),
         )
+        self.character.mutagen.apply()
+        self.character.mutagen.perk1()
+        self.character.mutagen.perk2()
 
         # Immunités Dark Warden (P1)
         self.character._immune = ["cursed", "dark_corruption"]

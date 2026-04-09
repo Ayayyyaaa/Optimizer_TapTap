@@ -37,6 +37,7 @@
 import random
 from character import Character
 from debuffs import apply_debuff, apply_buff, has_debuff, tick_debuffs
+from muta import Mutagen
 
 
 # Torment est un debuff custom — on l'enregistre dans DEBUFF_DEFS au chargement
@@ -86,7 +87,11 @@ class Zura:
             weapon             = [],
             dragons            = [],
             pos                = "front",
+            mutagen            = Mutagen(self, "D"),
         )
+        self.character.mutagen.apply()
+        self.character.mutagen.perk1()
+        self.character.mutagen.perk2()
 
         # Immunités (War Body P1)
         self.character._immune = ["stun", "petrified", "silence"]

@@ -31,6 +31,7 @@
 import random
 from character import Character
 from debuffs import apply_debuff, has_debuff, apply_buff
+from muta import Mutagen
 
 
 class Teepo:
@@ -64,8 +65,11 @@ class Teepo:
             weapon             = [],
             dragons            = [],
             pos                = "front",
+            mutagen            = Mutagen(self, "S"),
         )
-
+        self.character.mutagen.apply()
+        self.character.mutagen.perk1()
+        self.character.mutagen.perk2()
         # Immune au Poison (Line Mastery P1)
         self.character._immune = ["poisoned"]
 
@@ -149,6 +153,7 @@ class Teepo:
         if not alive_enemies:
             return 0.0
 
+        self.character.mutagen.perk4()
         target      = random.choice(alive_enemies)
         target_char = getattr(target, "character", target)
 
@@ -242,7 +247,7 @@ class Teepo:
             d.on_round_end(char, allies, round_number)
 
     def on_ally_die(self, allies: list):
-        pass
+        self.character.mutagen.perk3()
 
     def on_self_death(self, allies: list):
         pass

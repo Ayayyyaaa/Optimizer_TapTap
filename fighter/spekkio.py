@@ -11,6 +11,7 @@
 from character import Character
 from debuffs import apply_debuff
 import random
+from muta import Mutagen
 
 
 class Spekkio:
@@ -28,12 +29,17 @@ class Spekkio:
             1,         # dmg_reduce
             0.5,       # control_resist
             0.15,      # hit_chance  (miss chance)
+            Mutagen(self, "S"),
             0.5,       # armor_break
             0,         # control_precision
             0,         # stealth
             [], [],    # weapon, dragons
-            4          # position
+            4,          # position
+            
         )
+        self.character.mutagen.apply()
+        self.character.mutagen.perk1()
+        self.character.mutagen.perk2()
         self.immune   = ["atk_reduce", "cr_reduce", "hi_chance_reduce", "stun"]
         self.character._immune = self.immune
         self.position = 4
@@ -74,7 +80,7 @@ class Spekkio:
     def ult(self, enemies, allies: list) -> float:
         if not enemies:
             return 0.0
-
+        self.character.mutagen.perk4()
         target      = self._pick_target(enemies, prefer="highest_hp")
         target_char = target.character if hasattr(target, "character") else target
 
@@ -143,3 +149,6 @@ class Spekkio:
             return min(alive, key=lambda e: get_stat(e, "hp"))
         else:
             return max(alive, key=lambda e: get_stat(e, "hp"))
+        
+    def on_ally_die(self, allies: list):
+        self.character.mutagen.perk3()

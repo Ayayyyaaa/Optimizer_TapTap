@@ -7,6 +7,7 @@
 import random
 from character import Character
 from debuffs import apply_debuff, apply_buff, remove_buff, has_buff, tick_buffs
+from muta import Mutagen
 
 
 class Saban:
@@ -31,7 +32,11 @@ class Saban:
             weapon            = [],
             dragons           = [],
             pos               = "back",
+            mutagen            = Mutagen(self, "E"),
         )
+        self.character.mutagen.apply()
+        self.character.mutagen.perk1()
+        self.character.mutagen.perk2()
         self.immune   = []
         self.character._immune = self.immune
         self.position = 1

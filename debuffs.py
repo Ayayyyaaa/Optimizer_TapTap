@@ -159,6 +159,8 @@ def tick_debuffs(character):
         character.hp      -= base_dot
         total_dot_dmg     += base_dot
 
+        #if source_char and source_char.name == "Chancer":
+            #print(f"Chancer inflige DOT {total_dot_dmg:.2f} total DoT damage from Chancer's {debuff['type']} (base_dot={base_dot:.2f})")
     if character.hp <= 0:
         character.is_alive = False
 

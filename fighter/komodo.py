@@ -28,6 +28,7 @@
 import random
 from character import Character
 from debuffs import apply_debuff
+from muta import Mutagen
 
 
 class Komodo:
@@ -61,7 +62,11 @@ class Komodo:
             weapon             = [],
             dragons            = [],
             pos                = "front",
+            mutagen            = Mutagen(self, "S"),
         )
+        self.character.mutagen.apply()
+        self.character.mutagen.perk1()
+        self.character.mutagen.perk2()
 
         self.character._immune = []
 
@@ -141,7 +146,7 @@ class Komodo:
                          if getattr(getattr(e, "character", e), "is_alive", True)]
         if not alive_enemies:
             return 0.0
-
+        self.character.mutagen.perk4()
         # 3 ennemis avec le plus d'ATK
         targets = sorted(alive_enemies,
                          key=lambda e: getattr(getattr(e, "character", e), "atk", 0),
@@ -276,3 +281,6 @@ class Komodo:
         target_char._komodo_venom_rounds = 3
         target_char._komodo_hit_stolen   = hit_malus
         target_char._komodo_cr_stolen    = cr_malus
+
+    def on_ally_die(self, allies: list):
+        self.character.mutagen.perk3()

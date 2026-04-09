@@ -60,6 +60,7 @@ def run_combat(
 
     # ── Boucle de combat ─────────────────────────────────────
     for round_num in range(1, nb_rounds + 1):
+        #print(f"\n──── Round {round_num} ────")
         if verbose:
             print(f"\n──── Round {round_num} ────")
 

@@ -45,6 +45,7 @@
 import random
 from character import Character
 from debuffs import apply_debuff, has_debuff, apply_buff, remove_buff
+from muta import Mutagen
 
 class Terryx:
     """Fighter Terryx — Faction Finisher."""
@@ -82,8 +83,11 @@ class Terryx:
             weapon            = [],
             dragons           = [],
             pos               = "front",
+            mutagen            = Mutagen(self, "E"),
         )
-
+        self.character.mutagen.apply()
+        self.character.mutagen.perk1()
+        self.character.mutagen.perk2()
         # Immunités Apex Predator (P1) — tous les DoT + Molten Fury
         self.character._immune = [
             "bleeding", "poisoned", "burning", "burn",

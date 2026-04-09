@@ -43,6 +43,7 @@
 import random
 from character import Character
 from debuffs import apply_debuff, has_debuff, apply_buff
+from muta import Mutagen
 
 class Scythe:
     """Fighter Scythe."""
@@ -79,7 +80,11 @@ class Scythe:
             weapon            = [],
             dragons           = [],
             pos               = "front",
+            mutagen            = Mutagen(self, "S"),
         )
+        self.character.mutagen.apply()
+        self.character.mutagen.perk1()
+        self.character.mutagen.perk2()
 
         # Immunités Harvester (P1)
         self.character._immune = ["atk_reduce", "spd_reduce"]
@@ -201,7 +206,7 @@ class Scythe:
                          if getattr(getattr(e, "character", e), "is_alive", True)]
         if not alive_enemies:
             return 0.0
-
+        self.character.mutagen.perk4()
         # ── Soul Reaper (P3) : déclencher Curse sur les Skullbound Seals ──
         if self._soul_reaper_curse_pending and self._skullbound_enemies:
             self._trigger_soul_reaper_curse(enemies)
@@ -385,3 +390,6 @@ class Scythe:
             self.character.hp = min(self.character.max_hp, self.character.hp + heal)
             return 0.0   # Dégâts annulés
         return dot_dmg
+    
+    def on_ally_die(self, allies: list):
+        self.character.mutagen.perk3()

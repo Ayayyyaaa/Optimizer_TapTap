@@ -33,6 +33,7 @@
 import random
 from character import Character
 from debuffs import apply_debuff, has_debuff, apply_buff
+from muta import Mutagen
 
 class Ruby:
     """Fighter Ruby."""
@@ -70,8 +71,11 @@ class Ruby:
             weapon            = [],
             dragons           = [],
             pos               = "front",
+            mutagen            = Mutagen(self, "E"),
         )
-
+        self.character.mutagen.apply()
+        self.character.mutagen.perk1()
+        self.character.mutagen.perk2()
         # Variables internes pour ses passifs complexes
         self._round_counter = 0
         self._dragon_shell_hp = 0

@@ -289,6 +289,7 @@ class Leene:
                 # Skill DMG +25% pendant 2 rounds
                 if any(b["type"] == "leene_skill_dmg_up" for b in a_char.buffs):
                     remove_buff(a_char, "leene_skill_dmg_up")
+                print(f"Lenne apply skill_dmg a {a_char.name}, cd = {a_char.skill_dmg}")
                 apply_buff(a_char, "leene_skill_dmg_up", duration=2,
                            delta_override=0.25, source=self)
 

@@ -538,6 +538,8 @@ def run_genetic_optimizer():
                 injected = pool.map(_evaluate_worker, injected)
                 population[-n_inject:] = injected
                 print(f"  ↺ Injection diversité ({n_inject} génomes) + rééval top-10")
+            if stagnation >= stag_limit * 2:
+                break
 
     _print_results(best_ever)
     return best_ever

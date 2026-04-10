@@ -285,6 +285,8 @@ def apply_buff(character, buff_type: str, duration: int, delta_override: float =
         "source":   source,
     })
     _apply_buff_stat(character, defn.get("stat"), delta, mode, apply=True)
+    if source.character.name == "Leene":
+        print(f"Buff appliqué par Leene sur {character.name}, new skill_dmg = {character.skill_dmg}")
     return True
 
 

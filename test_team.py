@@ -108,7 +108,7 @@ team = {
     }
 teamtest = {
         0: {"fighter_cls": Zura, "weapons": [Weapon_Kusarigama, Weapon_Cobra, Weapon_Kunai], "dragons": [Zhulong, Naga]},
-        1: {"fighter_cls": Terryx, "weapons": [Weapon_Knuckles, Weapon_Bow, Weapon_Claw], "dragons": [Yamata, Zhulong]},
+        1: {"fighter_cls": Leene, "weapons": [Weapon_Knuckles, Weapon_Bow, Weapon_Claw], "dragons": [Yamata, Zhulong]},
         2: {"fighter_cls": Zemus, "weapons": [Weapon_Knife, Weapon_Haladie, Weapon_FanAxe], "dragons": [Toronbo, Dabei]},
         3: {"fighter_cls": Chancer, "weapons": [Weapon_Knife, Weapon_Kunai, Weapon_Khopesh], "dragons": [Naga, Yinglong]},
         4: {"fighter_cls": Laguna, "weapons": [Weapon_Knuckles, Weapon_Dart, Weapon_Bomb], "dragons": [Toronbo, Mingshe]},

@@ -177,6 +177,7 @@ def run_combat(
                             d.on_ally_die(other.character, allies)
                         if hasattr(other, "on_ally_die"):
                             other.on_ally_die(allies)
+            print(f"{f.character.name} : atk : {f.character.atk}, hp : {f.character.hp}, armor : {f.character.max_defense}, spd : {f.character.spd}, skill_dmg = {f.character.skill_dmg}, cr : {f.character.cr}, cd = {f.character.cd}")
 
     # ── Nettoyage bonus faction ───────────────────────────────
     for f in allies:
@@ -259,7 +260,7 @@ def simulate_team(team_build: dict, nb_rounds: int = 10, nb_simulations: int = 8
             fighters.append(f)
 
         boss  = boss_cls()
-        dmg, _ = run_combat(fighters, boss, nb_rounds=nb_rounds, verbose=False)
+        dmg, _ = run_combat(fighters, boss, nb_rounds=nb_rounds, verbose=True)
         total += dmg
 
     return total / nb_simulations

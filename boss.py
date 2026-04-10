@@ -165,7 +165,7 @@ class BossDefault(Boss):
         super().__init__(
             name        = "Training Dummy",
             faction     = "Cobra",
-            hp          = 9_999_999_999,
+            hp          = 99_999_999_999,
             atk         = 1_000,
             defense     = 800,
             spd         = 800,

@@ -41,9 +41,10 @@ def run_combat(
     for f in allies:
         char = f.character
         if FACTION_COUNTER.get(char.faction) == boss.faction:
-            char.hit_chance = getattr(char, "hit_chance", 0.15) + 0.15
+            char._faction_dmg_bonus = 0.30   # +30% dégâts directs
             char._faction_hit_bonus = True
         else:
+            char._faction_dmg_bonus = 0.0
             char._faction_hit_bonus = False
 
         for w in char.weapon:
@@ -109,6 +110,8 @@ def run_combat(
                 char.energy += 50
             if not _roll_hit(char):
                 raw_dmg *= 0.5
+            if getattr(char, "_faction_dmg_bonus", 0.0) > 0:
+                raw_dmg *= (1.0 + char._faction_dmg_bonus)
             final_dmg = boss.take_damage(raw_dmg, char, is_skill=is_skill)
             total_dmg_to_boss += final_dmg
             dmg_tracker[char.name]["direct"] += final_dmg
@@ -177,8 +180,8 @@ def run_combat(
 
     # ── Nettoyage bonus faction ───────────────────────────────
     for f in allies:
-        if getattr(f.character, "_faction_hit_bonus", False):
-            f.character.hit_chance -= 0.15
+        if getattr(f.character, "_faction_dmg_bonus", 0.0) > 0:
+            f.character._faction_dmg_bonus = 0.0
     
     if verbose:
         _print_dmg_breakdown(dmg_tracker, total_dmg_to_boss, nb_rounds)

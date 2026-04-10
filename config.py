@@ -97,14 +97,14 @@ DRAGON_INVENTORY = {
 #  PARAMÈTRES ALGORITHME GÉNÉTIQUE
 # ───────────────────────────────────────────────────────────────
 GA_CONFIG = {
-    "population_size":  250,   # ↓ de 500 : le cache compense #250
-    "generations":      175,   # ↑ de 120 : arrêt anticipé protège
-    "elite_ratio":      0.15,  # ↓ de 0.15 : moins de deepcopy
+    "population_size":  1000,   # ↓ de 500 : le cache compense #250
+    "generations":      250,   # ↑ de 120 : arrêt anticipé protège
+    "elite_ratio":      0.18,  # ↓ de 0.15 : moins de deepcopy
     "crossover_ratio":  0.65,  # ↑ léger
     "mutation_rate":    0.20,  # ↓ de 0.25 : moins de réparations
-    "simulations":      80,   # ↓ de 150 : le cache rattrape #75
+    "simulations":      120,   # ↓ de 150 : le cache rattrape #75
     "rounds":           10,
-    "stagnation_limit": 20,    # ↓ de 20 : économise ~5 générations inutiles
+    "stagnation_limit": 15,    # ↓ de 20 : économise ~5 générations inutiles
 }
 
 # ───────────────────────────────────────────────────────────────

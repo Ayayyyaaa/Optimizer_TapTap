@@ -2,10 +2,14 @@
 #  OPTIMIZER.PY  —  Algorithme génétique pour optimisation d'équipe
 #  Version optimisée :
 #    • Pool de workers persistant (créé une seule fois, pas par génération)
-#    • Cache de fitness (évite de réévaluer un génome déjà vu)
+#    • Cache de fitness LRU partiel (évite fuite mémoire sans tout vider)
 #    • deepcopy uniquement sur les élites (pas sur tout le génome)
 #    • Croisement uniforme par slot (meilleure exploration vs point unique)
 #    • Réparation dragons O(n) sans shuffle répété
+#    • Repair fighters orienté fitness (préserve les meilleurs fighters)
+#    • swap_rows multi-échanges (explore toutes les combinaisons front/back)
+#    • Tournoi adaptatif (pression faible en début, forte en fin)
+#    • Réaction stagnation anticipée + injection diversité
 # ═══════════════════════════════════════════════════════════════
 
 import random
@@ -30,6 +34,24 @@ for idx, w_cls in enumerate(WEAPON_INVENTORY):
 
 # ── Cache de fitness (process principal uniquement) ───────────
 _fitness_cache: dict[tuple, float] = {}
+_CACHE_MAX_SIZE = 50_000
+_CACHE_KEEP     = 10_000   # nb d'entrées conservées lors du nettoyage partiel
+
+
+def _purge_cache_partial():
+    """Purge partielle LRU-like : conserve les _CACHE_KEEP entrées les plus récentes.
+    Bien moins destructeur que clear() qui force la réévaluation de tous les élites.
+    """
+    global _fitness_cache
+    if len(_fitness_cache) > _CACHE_MAX_SIZE:
+        items = list(_fitness_cache.items())
+        # Garde les dernières entrées insérées (approximation LRU en Python 3.7+)
+        _fitness_cache = dict(items[-_CACHE_KEEP:])
+
+
+# ── Classement des fighters par fitness moyenne observée ─────
+# Mis à jour après chaque évaluation pour guider le repair.
+_fighter_scores: dict[int, float] = {}   # fighter_idx → meilleur fitness vu
 
 
 def _genome_key(genome: "Genome") -> tuple:
@@ -79,19 +101,25 @@ class Genome:
             }
         return build
 
-    def evaluate(self) -> float:
+    def evaluate(self, nb_sims: int = None) -> float:
         key = _genome_key(self)
         if key in _fitness_cache:
             self.fitness = _fitness_cache[key]
             return self.fitness
         cfg = GA_CONFIG
+        sims = nb_sims or cfg["simulations"]
         self.fitness = simulate_team(
             self.to_team_build(),
             nb_rounds=cfg["rounds"],
-            nb_simulations=cfg["simulations"],
+            nb_simulations=sims,
             boss_cls=TARGET_BOSS,
         )
         _fitness_cache[key] = self.fitness
+        # Mise à jour du score par fighter (garde le meilleur vu)
+        for slot in self.slots:
+            fi = slot["fighter_idx"]
+            if self.fitness > _fighter_scores.get(fi, -1.0):
+                _fighter_scores[fi] = self.fitness
         return self.fitness
 
     def __repr__(self):
@@ -236,9 +264,11 @@ def mutate(parent: Genome) -> Genome:
 
 def swap_rows(parent: Genome) -> Genome:
     """
-    Mutation de repositionnement : échange un slot front (0-2) avec un slot back (3-5).
+    Mutation de repositionnement multi-échanges :
+    - 70% : échange un seul couple front↔back (exploration locale)
+    - 30% : échange deux couples distincts (exploration plus large)
     Armes et dragons suivent le fighter dans son nouveau slot.
-    Permet à l'algo d'explorer qui doit être en avant/arrière sans changer le roster.
+    Couvre toutes les 9 combinaisons possibles sans biais vers un seul échange.
     """
     child = Genome()
     child.slots = [
@@ -249,11 +279,23 @@ def swap_rows(parent: Genome) -> Genome:
         }
         for s in parent.slots
     ]
-    front_slot = random.randrange(0, 3)
-    back_slot  = random.randrange(3, TEAM_SIZE)
-    child.slots[front_slot], child.slots[back_slot] = (
-        child.slots[back_slot], child.slots[front_slot]
-    )
+    front_slots = list(range(0, 3))
+    back_slots  = list(range(3, TEAM_SIZE))
+
+    # Premier échange (toujours)
+    f1 = random.choice(front_slots)
+    b1 = random.choice(back_slots)
+    child.slots[f1], child.slots[b1] = child.slots[b1], child.slots[f1]
+
+    # Second échange (30% du temps, sur une paire différente)
+    if random.random() < 0.30:
+        remaining_front = [s for s in front_slots if s != f1]
+        remaining_back  = [s for s in back_slots  if s != b1]
+        if remaining_front and remaining_back:
+            f2 = random.choice(remaining_front)
+            b2 = random.choice(remaining_back)
+            child.slots[f2], child.slots[b2] = child.slots[b2], child.slots[f2]
+
     repair(child)
     return child
 
@@ -269,6 +311,10 @@ def repair(genome: Genome):
 
 
 def _repair_fighters(genome: Genome):
+    """Repair orienté fitness : en cas de doublon, remplace par le fighter
+    disponible ayant le meilleur score observé (plutôt qu'un choix aléatoire).
+    Si aucun score connu, fallback aléatoire.
+    """
     used_fighters: set[int] = set()
     all_idxs = list(range(len(FIGHTER_POOL)))
     for slot in genome.slots:
@@ -278,7 +324,12 @@ def _repair_fighters(genome: Genome):
         else:
             available = [i for i in all_idxs if i not in used_fighters]
             if available:
-                new_fi = random.choice(available)
+                # Préfère le fighter avec le meilleur score connu
+                known = [(i, _fighter_scores[i]) for i in available if i in _fighter_scores]
+                if known:
+                    new_fi = max(known, key=lambda x: x[1])[0]
+                else:
+                    new_fi = random.choice(available)
                 slot["fighter_idx"] = new_fi
                 used_fighters.add(new_fi)
 
@@ -376,6 +427,12 @@ def _evaluate_worker(genome: Genome) -> Genome:
     return genome
 
 
+def _evaluate_worker_sims(genome: Genome) -> Genome:
+    """Worker pour la réévaluation de précision (nb_sims élevé) lors de la stagnation."""
+    genome.evaluate(nb_sims=300)
+    return genome
+
+
 # ═══════════════════════════════════════════════════════════════
 #  ALGORITHME GÉNÉTIQUE PRINCIPAL
 # ═══════════════════════════════════════════════════════════════
@@ -412,20 +469,22 @@ def run_genetic_optimizer():
         # ── Boucle évolutive ──────────────────────────────────
         for gen in range(1, generations + 1):
             next_gen = []
+            # Pression de sélection adaptative selon l'avancement
+            k = _adaptive_tournament_k(gen, generations)
 
             # 1. Élitisme : deepcopy uniquement sur elite_n individus
             next_gen.extend(copy.deepcopy(population[:elite_n]))
 
             # 2. Croisement uniforme
             while len(next_gen) < elite_n + cross_n:
-                pa = _tournament_select(population)
-                pb = _tournament_select(population)
+                pa = _tournament_select(population, k)
+                pb = _tournament_select(population, k)
                 ca, cb = crossover(pa, pb)
                 next_gen.extend([ca, cb])
 
             # 3. Mutation du reste (classique + swap de ligne front/back)
             while len(next_gen) < pop_size:
-                parent = _tournament_select(population)
+                parent = _tournament_select(population, k)
                 # 30% de chance d'échanger un fighter front ↔ back plutôt que
                 # de muter ses stats — explore les positions sans changer le roster
                 if random.random() < 0.30:
@@ -452,17 +511,33 @@ def run_genetic_optimizer():
                 stagnation += 1
                 marker = f" (stagnation {stagnation}/{stag_limit})"
 
-            # Nettoyage du cache toutes les 20 générations (évite fuite mémoire)
-            if gen % 20 == 0 and len(_fitness_cache) > 50_000:
-                _fitness_cache.clear()
+            # Nettoyage PARTIEL du cache toutes les 20 générations
+            # (garde les _CACHE_KEEP entrées les plus récentes, pas de clear total)
+            if gen % 20 == 0:
+                _purge_cache_partial()
 
             print(f"  Gen {gen:>3}/{generations}  |  "
                   f"Best : {gen_best.fitness:>15,.0f} DPS{marker}  |  "
-                  f"Cache : {len(_fitness_cache):,}")
+                  f"Cache : {len(_fitness_cache):,}  |  k={k}")
 
-            if stagnation >= stag_limit:
-                print(f"\n  Arrêt anticipé : pas d'amélioration depuis {stag_limit} générations.")
-                break
+            # Réaction stagnation anticipée : dès stag_limit//2 sans progrès,
+            # on réévalue les top-10 avec plus de sims ET on injecte de la diversité
+            stag_trigger = max(3, stag_limit // 2)
+            if stagnation > 0 and stagnation % stag_trigger == 0:
+                # Réévaluation de précision des top-10
+                for g in population[:10]:
+                    g.fitness = -1.0
+                    _fitness_cache.pop(_genome_key(g), None)
+                refined = pool.map(_evaluate_worker_sims, population[:10])
+                population[:10] = refined
+                population.sort(key=lambda g: g.fitness, reverse=True)
+                # Injection de génomes aléatoires dans le bas de la population
+                # pour relancer la diversité sans perdre les bons individus
+                n_inject = max(2, pop_size // 10)
+                injected = [Genome.random() for _ in range(n_inject)]
+                injected = pool.map(_evaluate_worker, injected)
+                population[-n_inject:] = injected
+                print(f"  ↺ Injection diversité ({n_inject} génomes) + rééval top-10")
 
     _print_results(best_ever)
     return best_ever
@@ -471,6 +546,16 @@ def run_genetic_optimizer():
 def _tournament_select(population: list, k: int = 4) -> Genome:
     contestants = random.sample(population, min(k, len(population)))
     return max(contestants, key=lambda g: g.fitness)
+
+
+def _adaptive_tournament_k(gen: int, generations: int) -> int:
+    """Pression de sélection adaptative :
+    - Début (exploration) : k faible (2-3) → plus de diversité
+    - Fin (exploitation)  : k élevé (6-8) → convergence sur les meilleurs
+    Transition linéaire entre les deux phases.
+    """
+    progress = gen / max(generations, 1)   # 0.0 → 1.0
+    return int(2 + progress * 6)           # 2 → 8
 
 
 def _print_results(best: Genome):

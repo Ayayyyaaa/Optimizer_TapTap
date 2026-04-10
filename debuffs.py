@@ -221,6 +221,7 @@ BUFF_DEFS = {
     # atk_up : augmente l'ATK (Scythe active — HP < 50%).
     # La valeur réelle est toujours passée via delta_override.
     "atk_up":            {"stat": "atk",             "delta": +0.25, "mode": "percent_base"},
+    "atk_muta_a":            {"stat": "atk",             "delta": +0.05, "mode": "percent_base"},
 
     # cd_up : augmente le Crit Damage (Ruby P3, Scythe active & P3).
     "cd_up":             {"stat": "cd",              "delta": +0.20, "mode": "flat"},

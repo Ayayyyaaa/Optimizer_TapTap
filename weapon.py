@@ -144,13 +144,12 @@ class Weapon_Shuriken:
     group = 2
     def __init__(self):
         self.name = "Shuriken"
-    def on_battle_start(self, fighter):pass
+    def on_battle_start(self, fighter):
+        fighter._faction_dmg_bonus *= 3
     def on_round_start(self, fighter, allies): pass
     def on_basic_attack(self, fighter, dmg): pass
     def on_round_end(self, fighter, allies, round_number): pass
     def modify_damage_dealt(self, fighter, target, current_damage): 
-        if target.faction == factions.get(fighter.faction):
-            return current_damage * 3
         return current_damage
     def on_ally_die(self, fighter, allies):
         pass

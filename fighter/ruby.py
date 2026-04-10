@@ -54,6 +54,7 @@ class Ruby:
         self.character = Character(
             name              = "Ruby",
             faction           = "Dragon",  # À ajuster si sa faction est différente
+            role              = "Mage",
             hp                = self.BASE_HP,
             atk               = self.BASE_ATK,
             defense           = self.BASE_DEF,

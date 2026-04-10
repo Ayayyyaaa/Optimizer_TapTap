@@ -35,6 +35,13 @@ def run_combat(
         f.character.name: {"direct": 0.0, "dot": 0.0, "orb": 0.0}
         for f in allies
     }
+
+    # ── Tracker d'impact des supports ────────────────────────
+    # Enregistre les buffs appliqués par chaque fighter sur ses alliés.
+    # Structure : { source_name : { target_name : { buff_type : delta_total } } }
+    support_tracker: dict[str, dict] = {
+        f.character.name: {} for f in allies
+    }
     if team:
         print(f"fighters: {[f.character.name for f in allies]}, boss: {boss.name}")
     # ── Battle start ─────────────────────────────────────────
@@ -177,15 +184,18 @@ def run_combat(
                             d.on_ally_die(other.character, allies)
                         if hasattr(other, "on_ally_die"):
                             other.on_ally_die(allies)
-            print(f"{f.character.name} : atk : {f.character.atk}, hp : {f.character.hp}, armor : {f.character.max_defense}, spd : {f.character.spd}, skill_dmg = {f.character.skill_dmg}, cr : {f.character.cr}, cd = {f.character.cd}")
 
     # ── Nettoyage bonus faction ───────────────────────────────
     for f in allies:
         if getattr(f.character, "_faction_dmg_bonus", 0.0) > 0:
             f.character._faction_dmg_bonus = 0.0
-    
+
+    # ── Snapshot final des buffs actifs (contribution des supports) ──
+    _collect_support_impact(allies, support_tracker)
+
     if verbose:
         _print_dmg_breakdown(dmg_tracker, total_dmg_to_boss, nb_rounds)
+        _print_support_impact(support_tracker)
 
     return total_dmg_to_boss, dmg_tracker
 
@@ -241,6 +251,74 @@ def _print_dmg_breakdown(
 def _roll_hit(char) -> bool:
     miss_chance = max(0.0, getattr(char, "hit_chance", 0.15))
     return random.random() >= miss_chance
+
+
+def _collect_support_impact(allies: list, support_tracker: dict):
+    """
+    En fin de combat, lit les buffs encore actifs sur chaque fighter
+    et les attribue à leur source dans le support_tracker.
+    Permet de voir l'impact réel de chaque support sur ses alliés.
+    """
+    for fighter in allies:
+        char = fighter.character
+        for buff in char.buffs:
+            source = buff.get("source")
+            if source is None:
+                continue
+            source_char = getattr(source, "character", source)
+            source_name = getattr(source_char, "name", "?")
+            if source_name == char.name:
+                continue   # buff auto-appliqué, pas un support
+            if source_name not in support_tracker:
+                support_tracker[source_name] = {}
+            target_data = support_tracker[source_name].setdefault(char.name, {})
+            btype = buff["type"]
+            delta = buff.get("delta", 0.0)
+            target_data[btype] = target_data.get(btype, 0.0) + delta
+
+
+def _print_support_impact(support_tracker: dict):
+    """Affiche le tableau d'impact des supports (buffs donnés à leurs alliés)."""
+    # Filtre les sources qui n'ont rien bufféé
+    active = {src: targets for src, targets in support_tracker.items() if targets}
+    if not active:
+        return
+
+    print(f"\n{'═'*62}")
+    print(f"  IMPACT DES SUPPORTS (buffs actifs en fin de combat)")
+    print(f"{'═'*62}")
+
+    STAT_LABELS = {
+        "skill_dmg":   "Skill DMG",
+        "cd":          "Crit DMG",
+        "cr":          "Crit Chance",
+        "atk":         "ATK",
+        "armor_break": "Armor Break",
+        "dmg_reduce":  "DMG Reduce",
+        "spd":         "SPD",
+        "defense":     "Defense",
+        "heal_effect": "Heal Effect",
+    }
+
+    # Map buff_type → stat via BUFF_DEFS
+    from debuffs import BUFF_DEFS
+    buff_to_stat = {btype: defn.get("stat") for btype, defn in BUFF_DEFS.items()}
+
+    for source_name, targets in sorted(active.items()):
+        print(f"\n  ▶ {source_name}")
+        for target_name, buffs in sorted(targets.items()):
+            lines = []
+            for btype, delta in buffs.items():
+                stat = buff_to_stat.get(btype)
+                label = STAT_LABELS.get(stat, stat or btype)
+                if abs(delta) >= 1:
+                    lines.append(f"{label} +{delta:,.0f}")
+                else:
+                    lines.append(f"{label} +{delta*100:.0f}%")
+            if lines:
+                print(f"    → {target_name:<14} : {' | '.join(lines)}")
+
+    print(f"\n{'═'*62}\n")
 
 
 def simulate_team(team_build: dict, nb_rounds: int = 10, nb_simulations: int = 8,

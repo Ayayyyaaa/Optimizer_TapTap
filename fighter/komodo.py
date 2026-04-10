@@ -45,6 +45,7 @@ class Komodo:
         self.character = Character(
             name               = "Komodo",
             faction            = "Mantis",
+            role               = "Brawler",
             hp                 = self.BASE_HP,
             atk                = self.BASE_ATK,
             defense            = self.BASE_DEF,

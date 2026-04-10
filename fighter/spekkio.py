@@ -9,7 +9,7 @@
 # ═══════════════════════════════════════════════════════════════
 
 from character import Character
-from debuffs import apply_debuff
+from debuffs import apply_debuff, has_debuff
 import random
 from muta import Mutagen
 
@@ -17,7 +17,7 @@ from muta import Mutagen
 class Spekkio:
     def __init__(self):
         self.character = Character(
-            "Spekkio", "Kodiak",
+            "Spekkio", "Kodiak", "Finisher",
             2929509,   # hp
             72514,     # atk
             2884,      # defense
@@ -74,6 +74,9 @@ class Spekkio:
             damage = w.modify_damage_dealt(self.character, target_char, damage)
             w.on_basic_attack(self.character, damage)
 
+        if has_debuff(target_char, "molten_fury"):
+            damage *= 1.15
+
         return damage * self.character.attack_multiplier
 
     # ── Ultime ───────────────────────────────────────────────
@@ -111,6 +114,10 @@ class Spekkio:
 
         for w in self.character.weapon:
             total_damage = w.modify_damage_dealt(self.character, target_char, total_damage)
+
+        if has_debuff(target_char, "molten_fury"):
+            print("Molten Fury amplifies Spekkio's ult!")
+            total_damage *= 1.15
 
         return total_damage * self.character.attack_multiplier
 

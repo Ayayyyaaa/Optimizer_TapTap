@@ -70,6 +70,7 @@ class Zura:
         self.character = Character(
             name               = "Zura",
             faction            = "Howler",   # à ajuster
+            role               = "Support", 
             hp                 = self.BASE_HP,
             atk                = self.BASE_ATK,
             defense            = self.BASE_DEF,

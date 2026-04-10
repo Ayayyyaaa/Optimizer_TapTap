@@ -15,6 +15,7 @@ class Saban:
         self.character = Character(
             name              = "Saban",
             faction           = "Kodiak",   # à ajuster selon le jeu
+            role              = "Brawler",
             hp                = 3_496_431,
             atk               = 61_613,
             defense           = 1_990,

@@ -48,6 +48,7 @@ class Teepo:
         self.character = Character(
             name               = "Teepo",
             faction            = "Howler",  # à ajuster selon le jeu
+            role               = "Brawler",
             hp                 = self.BASE_HP,
             atk                = self.BASE_ATK,
             defense            = self.BASE_DEF,

@@ -56,6 +56,7 @@ class Leene:
         self.character = Character(
             name               = "Leene",
             faction            = "Kodiak",
+            role               = "Support",
             hp                 = self.BASE_HP,
             atk                = self.BASE_ATK,
             defense            = self.BASE_DEF,

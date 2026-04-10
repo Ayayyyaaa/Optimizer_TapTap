@@ -62,7 +62,8 @@ class Scythe:
     def __init__(self):
         self.character = Character(
             name              = "Scythe",
-            faction           = "Unknown",
+            faction           = "Crane",
+            role              = "Finisher",
             hp                = self.BASE_HP,
             atk               = self.BASE_ATK,
             defense           = self.BASE_DEF,
@@ -159,11 +160,12 @@ class Scythe:
                 else:
                     dmg = self._calc_damage(e_char, raw)
 
-                e_char.hp -= dmg
                 total_dmg += dmg
 
                 # Heal Effect -35% pendant 5 rounds
                 apply_debuff(e_char, "heal_reduce", duration=5, source=self)
+                if has_debuff(e, "molten_fury"):
+                    total_dmg *= 1.15
 
                 if e_char.hp <= 0:
                     e_char.hp       = 0
@@ -191,6 +193,8 @@ class Scythe:
         char.energy = min(100, getattr(char, "energy", 0) + 20)
         for w in char.weapon:
             w.on_basic_attack(char, total_dmg)
+
+        
 
         return total_dmg
 
@@ -268,6 +272,10 @@ class Scythe:
                 extra_kill   = True
 
             i += 1
+        for w in self.character.weapon:
+            total_dmg = w.modify_damage_dealt(self.character, target_char, total_dmg)
+        if has_debuff(target_char, "molten_fury"):
+            total_dmg *= 1.15
 
         return total_dmg
 

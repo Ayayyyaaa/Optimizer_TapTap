@@ -18,6 +18,7 @@ class Okami:
         self.character = Character(
             name              = "Okami",
             faction           = "Crane",
+            role              = "Brawler",
             hp                = 4_258_154,
             atk               = 52_924,
             defense           = 1_920,

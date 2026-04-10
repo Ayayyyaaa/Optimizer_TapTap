@@ -6,13 +6,13 @@
 #  SKILLS :
 #
 #  [ACTIVE] Tri-Strike :
-#    - Attaque 1 : 450% dmg à 3 ennemis aléatoires.
+#    - Attaque 1 : 950% dmg répartis sur TOUS les ennemis vivants.
 #      15% chance d'appliquer Molten Fury (3 rounds) par cible.
-#    - Attaque 2 : 500% dmg à 2 ennemis aléatoires.
-#      50% chance de Stun chaque cible (2 rounds).
-#    - Attaque 3 : 600% dmg à l'ennemi avec le moins de HP.
-#      50% chance de réduire Armor et Damage Reduction de 30% (3 rounds).
-#    - Après toutes les attaques : +15% ATK par cible touchée (2 rounds).
+#      +15% ATK par cible touchée (2 rounds, appliqué sur char.atk).
+#    - Attaque 2 (si ≥1 Dino Orb) : 750% dmg aux 2 ennemis avec le plus d'ATK.
+#      30% chance de Stun 2 rounds par cible.
+#    - Attaque 3 (si 2 Dino Orbs) : 850% dmg à l'ennemi avec le moins de HP.
+#      50% chance de réduire Armor et DR de 30% (3 rounds).
 #
 #  [PASSIVE 1] Apex Predator :
 #    - HP +40%, ATK +50%, CR +40%, Armor Break +50%, SPD +80.
@@ -27,19 +27,15 @@
 #    - Si 2 Dino Orbs actifs : 400% dmg total sur la cible principale.
 #
 #  [PASSIVE 3] Dino Orbs :
-#    - Round 1 : Invoque 1 Dino Orb (pas d'attaque).
-#    - Round 2+ : Chaque Dino Orb attaque un ennemi aléatoire pour 300% dmg
-#      (DoT, ne peut pas crit, ignore les boucliers).
-#    - Max 2 orbes. Invocation d'un orbe → soin self de 15% Max HP.
+#    - Fin de round : 50% chance d'invoquer 1 Dino Orb (max 2).
+#    - Invocation → soin self de 100% Max HP.
 #    - 2 orbes actifs → tous les alliés Finisher gagnent +25% ATK (permanent).
+#    - Dino Orb : attaque l'ennemi avec le moins de HP pour 750% dmg,
+#      ignore les boucliers.
 #    - À la mort : revit en Techno Spike avec 100% HP et stats améliorées.
 #
-#  CORRECTIONS :
-#    - Bug 1 : tristrike_atk_up — retire l'ancien buff avant d'en poser un nouveau
-#              pour que le 2ème cast soit bien pris en compte.
-#    - Bug 2 : Molten Fury n'est plus appliqué sur les cibles déjà mortes.
-#    - Bug 3 : on_orb_attack et on_self_death sont appelés par combat_engine
-#              (corrections côté moteur).
+#  (Molten Fury : +15% dmg Finisher sur la cible.)
+#
 # ═══════════════════════════════════════════════════════════════
 
 import random
@@ -67,6 +63,7 @@ class Terryx:
             name              = "Terryx",
             faction           = "Finisher",
             hp                = self.BASE_HP,
+            role              = "Finisher", 
             atk               = self.BASE_ATK,
             defense           = self.BASE_DEF,
             spd               = self.BASE_SPD,
@@ -83,11 +80,12 @@ class Terryx:
             weapon            = [],
             dragons           = [],
             pos               = "front",
-            mutagen            = Mutagen(self, "E"),
+            mutagen           = Mutagen(self, "E"),
         )
         self.character.mutagen.apply()
         self.character.mutagen.perk1()
         self.character.mutagen.perk2()
+
         # Immunités Apex Predator (P1) — tous les DoT + Molten Fury
         self.character._immune = [
             "bleeding", "poisoned", "burning", "burn",
@@ -131,26 +129,22 @@ class Terryx:
             char.atk += 0.25 * finisher_count * char.base_atk
 
     # ══════════════════════════════════════════════════════════
-    #  ROUND START — Dino Orbs (P3)
+    #  ROUND START
     # ══════════════════════════════════════════════════════════
 
     def on_round_start(self, allies: list):
         self._round_counter += 1
 
-        if self._dino_orbs < 2:
-            self._summon_orb(allies)
-
     # ══════════════════════════════════════════════════════════
-    #  DINO ORB ATTACK — appelé par combat_engine (round >= 2)
+    #  DINO ORB ATTACK — appelé par combat_engine en début de round
     # ══════════════════════════════════════════════════════════
 
     def on_orb_attack(self, enemies: list) -> float:
         """
-        Chaque Dino Orb attaque un ennemi aléatoire pour 300% ATK dmg.
-        DoT : pas de crit, ignore les boucliers.
-        Appelé par combat_engine en début de round si round >= 2.
+        Chaque Dino Orb attaque l'ennemi avec le moins de HP pour 750% ATK dmg.
+        Ignore les boucliers (appliqué directement sur HP).
         """
-        if self._round_counter < 2 or self._dino_orbs == 0:
+        if self._dino_orbs == 0:
             return 0.0
 
         char = self.character
@@ -161,11 +155,14 @@ class Terryx:
                              if getattr(getattr(e, "character", e), "is_alive", True)]
             if not alive_enemies:
                 break
-            target = random.choice(alive_enemies)
+
+            # Cible : ennemi avec le moins de HP
+            target = min(alive_enemies,
+                         key=lambda e: getattr(getattr(e, "character", e), "hp", float("inf")))
             t_char = getattr(target, "character", target)
 
-            # DoT, pas de crit, ignore bouclier → appliqué directement sur HP
-            raw = char.atk * 3.00
+            # Ignore bouclier → appliqué directement sur HP, pas de crit
+            raw = char.atk * 7.50
             t_char.hp -= raw
             total_dmg += raw
             if t_char.hp <= 0:
@@ -205,8 +202,9 @@ class Terryx:
         # 50% chance Molten Fury — seulement si la cible est encore vivante
         if primary_char.is_alive and random.random() < 0.50:
             apply_debuff(primary_char, "molten_fury", duration=3, source=self)
+            print("Molten Fury appliqué sur la cible principale de Terryx!")
 
-        # Si exactement 1 orbe : frappe l'ennemi derrière
+        # Si exactement 1 orbe : frappe l'ennemi derrière pour 150%
         if self._dino_orbs == 1:
             behind = self._get_enemy_behind(primary, alive_enemies)
             if behind:
@@ -240,14 +238,13 @@ class Terryx:
         if not alive_enemies:
             return 0.0
 
-        # ── Attaque 1 : 450% × 3 ennemis aléatoires ──────────
-        nb1      = min(3, len(alive_enemies))
-        targets1 = random.sample(alive_enemies, nb1)
-        for t in targets1:
+        # ── Attaque 1 : 950% répartis sur TOUS les ennemis vivants ──
+        dmg_per_target = 9.50 / len(alive_enemies)
+        for t in alive_enemies:
             t_char = getattr(t, "character", t)
             if not t_char.is_alive:
                 continue
-            raw = char.atk * char.attack_multiplier * 4.50
+            raw = char.atk * char.attack_multiplier * dmg_per_target
             raw *= (1.0 + char.skill_dmg)
             dmg = self._calc_damage(t_char, raw)
             t_char.hp -= dmg
@@ -256,63 +253,72 @@ class Terryx:
             if t_char.hp <= 0:
                 t_char.hp       = 0
                 t_char.is_alive = False
-            # BUG FIX : Molten Fury uniquement si la cible est vivante
+            # 15% Molten Fury si cible vivante
             if t_char.is_alive and random.random() < 0.15:
                 apply_debuff(t_char, "molten_fury", duration=3, source=self)
+                print("Molten Fury appliqué sur une cible de l'ult de Terryx!")
 
-        # ── Attaque 2 : 500% × 2 ennemis aléatoires ──────────
-        alive_enemies = [e for e in enemies
-                         if getattr(getattr(e, "character", e), "is_alive", True)]
-        nb2      = min(2, len(alive_enemies))
-        targets2 = random.sample(alive_enemies, nb2) if alive_enemies else []
-        for t in targets2:
-            t_char = getattr(t, "character", t)
-            if not t_char.is_alive:
-                continue
-            raw = char.atk * char.attack_multiplier * 5.00
-            raw *= (1.0 + char.skill_dmg)
-            dmg = self._calc_damage(t_char, raw)
-            t_char.hp -= dmg
-            total_dmg += dmg
-            targets_hit.add(id(t))
-            if t_char.hp <= 0:
-                t_char.hp       = 0
-                t_char.is_alive = False
-            # Stun uniquement si la cible est vivante
-            if t_char.is_alive and random.random() < 0.50:
-                apply_debuff(t_char, "stun", duration=2, source=self)
-
-        # ── Attaque 3 : 600% sur l'ennemi avec le moins de HP ─
-        alive_enemies = [e for e in enemies
-                         if getattr(getattr(e, "character", e), "is_alive", True)]
-        if alive_enemies:
-            target3 = min(alive_enemies,
-                          key=lambda e: getattr(getattr(e, "character", e), "hp", float("inf")))
-            t3_char = getattr(target3, "character", target3)
-            raw = char.atk * char.attack_multiplier * 6.00
-            raw *= (1.0 + char.skill_dmg)
-            dmg = self._calc_damage(t3_char, raw)
-            t3_char.hp -= dmg
-            total_dmg += dmg
-            targets_hit.add(id(target3))
-            if t3_char.hp <= 0:
-                t3_char.hp       = 0
-                t3_char.is_alive = False
-            # Armor/DR shred uniquement si la cible est vivante
-            if t3_char.is_alive and random.random() < 0.50:
-                apply_debuff(t3_char, "armor_reduction",  duration=3, source=self)
-                apply_debuff(t3_char, "dmg_reduce_shred", duration=3, source=self)
-
-        # ── BUG FIX : +15% ATK par cible touchée (2 rounds) ──
-        # Si un buff tristrike_atk_up existe déjà (2ème cast),
-        # on retire l'ancien d'abord pour appliquer le nouveau correctement.
+        # ── +15% ATK par cible touchée (2 rounds) — FIXÉ : appliqué sur char.atk ──
         nb_hit = len(targets_hit)
         if nb_hit > 0:
             bonus_delta = 0.15 * nb_hit * char.base_atk
+            # Retire l'ancien buff si déjà actif (2ème cast)
             if any(b["type"] == "tristrike_atk_up" for b in char.buffs):
+                old_bonus = next(
+                    (b.get("delta", 0.0) for b in char.buffs if b["type"] == "tristrike_atk_up"),
+                    0.0
+                )
+                char.atk -= old_bonus
                 remove_buff(char, "tristrike_atk_up")
             apply_buff(char, "tristrike_atk_up", duration=2,
                        delta_override=bonus_delta, source=self)
+            char.atk += bonus_delta  # ← FIXÉ : appliqué réellement
+
+        # ── Attaque 2 (si ≥1 Dino Orb) : 750% aux 2 ennemis avec le plus d'ATK ──
+        if self._dino_orbs >= 1:
+            alive_enemies = [e for e in enemies
+                             if getattr(getattr(e, "character", e), "is_alive", True)]
+            targets2 = sorted(
+                alive_enemies,
+                key=lambda e: getattr(getattr(e, "character", e), "atk", 0),
+                reverse=True
+            )[:2]
+            for t in targets2:
+                t_char = getattr(t, "character", t)
+                if not t_char.is_alive:
+                    continue
+                raw = char.atk * char.attack_multiplier * 7.50
+                raw *= (1.0 + char.skill_dmg)
+                dmg = self._calc_damage(t_char, raw)
+                t_char.hp -= dmg
+                total_dmg += dmg
+                if t_char.hp <= 0:
+                    t_char.hp       = 0
+                    t_char.is_alive = False
+                # 30% Stun 2 rounds si cible vivante
+                if t_char.is_alive and random.random() < 0.30:
+                    apply_debuff(t_char, "stun", duration=2, source=self)
+
+        # ── Attaque 3 (si 2 Dino Orbs) : 850% sur l'ennemi avec le moins de HP ──
+        if self._dino_orbs >= 2:
+            alive_enemies = [e for e in enemies
+                             if getattr(getattr(e, "character", e), "is_alive", True)]
+            if alive_enemies:
+                target3 = min(alive_enemies,
+                              key=lambda e: getattr(getattr(e, "character", e), "hp", float("inf")))
+                t3_char = getattr(target3, "character", target3)
+                raw = char.atk * char.attack_multiplier * 8.50
+                raw *= (1.0 + char.skill_dmg)
+                dmg = self._calc_damage(t3_char, raw)
+                t3_char.hp -= dmg
+                total_dmg += dmg
+                if t3_char.hp <= 0:
+                    t3_char.hp       = 0
+                    t3_char.is_alive = False
+                # 50% chance shred Armor/DR 30% (3 rounds) si cible vivante
+                if t3_char.is_alive and random.random() < 0.50:
+                    apply_debuff(t3_char, "armor_reduction",  duration=3, source=self)
+                    apply_debuff(t3_char, "dmg_reduce_shred", duration=3, source=self)
 
         return total_dmg
 
@@ -345,11 +351,18 @@ class Terryx:
         return True
 
     # ══════════════════════════════════════════════════════════
-    #  ROUND END
+    #  ROUND END — invocation des Dino Orbs (50% de chance)
     # ══════════════════════════════════════════════════════════
 
     def on_round_end(self, allies: list, round_number: int):
         char = self.character
+
+        # Invocation orbe en fin de round : 50% de chance (Ascended → 100%)
+        if self._dino_orbs < 2:
+            summon_chance = 1.0 if getattr(self, "_is_ascended", False) else 1.0
+            if random.random() < summon_chance:
+                self._summon_orb(allies)
+
         for w in char.weapon:
             w.on_round_end(char, allies, round_number)
         for d in char.dragons:
@@ -367,25 +380,28 @@ class Terryx:
         char = self.character
         if not bypass_crit and random.random() < char.cr:
             raw_dmg *= char.cd
+        # Molten Fury : +15% dmg Finisher sur la cible (FIXÉ : était 20%)
         if has_debuff(target_char, "molten_fury"):
-            raw_dmg *= 1.20
+            raw_dmg *= 1.15
         return max(0.0, raw_dmg)
 
     def _summon_orb(self, allies: list):
-        """Invoque 1 Dino Orb (max 2). Soin self + buff alliés si 2 orbes."""
+        """Invoque 1 Dino Orb (max 2). Soin self 100% Max HP + buff alliés si 2 orbes."""
         if self._dino_orbs >= 2:
             return
 
         self._dino_orbs += 1
         char = self.character
 
-        char.hp = min(char.max_hp, char.hp + char.max_hp * 0.15)
+        # Soin 100% Max HP (FIXÉ : était 15%)
+        char.hp = min(char.max_hp, char.hp + char.max_hp * 1.00)
 
+        # 2 orbes → tous les alliés Finisher gagnent +25% ATK (permanent)
         if self._dino_orbs == 2 and not self._orb_buff_applied:
             self._orb_buff_applied = True
             for ally in allies:
                 a_char = getattr(ally, "character", ally)
-                if getattr(a_char, "faction", "") == "Finisher" and a_char.is_alive:
+                if getattr(a_char, "role", "") == "Finisher" and a_char.is_alive:
                     a_char.atk += 0.25 * getattr(a_char, "base_atk", a_char.atk)
 
     def _get_enemy_behind(self, primary, alive_enemies: list):

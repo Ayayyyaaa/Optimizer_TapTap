@@ -46,7 +46,8 @@ class Necro:
     def __init__(self):
         self.character = Character(
             name              = "Necro",
-            faction           = "Mage",   # À ajuster si différent
+            faction           = "Cobra",   # À ajuster si différent
+            role              = "Mage",
             hp                = self.BASE_HP,
             atk               = self.BASE_ATK,
             defense           = self.BASE_DEF,

@@ -56,6 +56,7 @@ class Zemus:
         self.character = Character(
             name               = "Zemus",
             faction            = "Cobra",
+            role               = "Finisher",
             hp                 = self.BASE_HP,
             atk                = self.BASE_ATK,
             defense            = self.BASE_DEF,
@@ -280,11 +281,8 @@ class Zemus:
                 }
 
         # ── CD boost pour les 2 alliés avec le plus d'ATK ────
-        # (pour chaque ennemi Cursed — le moteur centralisé gère les ennemis,
-        #  ici on accède aux alliés uniquement)
-        # Implémentation simplifiée : on boost à chaque fin de round si un buff
-        # "cursed_enemies" est présent (posé par le moteur) — sinon, on skip.
-        # Dans fight.py (dummy boss), on applique systématiquement si ult a été castée.
+        # Déclenché une fois par round si un ennemi est Cursed.
+        # Utilise apply_buff pour éviter le cumul infini (refresh durée si déjà actif).
         if getattr(self, "_cursed_enemies_count", 0) > 0:
             sorted_allies = sorted(
                 [a for a in allies if a.character.is_alive],
@@ -293,8 +291,9 @@ class Zemus:
             )[:2]
             for ally in sorted_allies:
                 ac = ally.character
-                apply_buff(ac, "skill_dmg_up", duration=5, source=self)  # proxy CD boost
-                ac.cd += 0.50
+                # apply_buff gère le refresh : si "zemus_cd_up" existe déjà,
+                # on prolonge juste la durée sans re-appliquer le delta.
+                apply_buff(ac, "zemus_cd_up", duration=5, delta_override=0.50, source=self)
 
         # Callbacks armes / dragons
         for w in char.weapon:

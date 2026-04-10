@@ -261,10 +261,18 @@ BUFF_DEFS = {
     # ── Teepo ─────────────────────────────────────────────────
     "survival_dmg_reduce": {"stat": "dmg_reduce",   "delta":  0,    "mode": "flat"},
 
+    # ── Zemus ─────────────────────────────────────────────────
+    # zemus_cd_up : boost CD des 2 alliés les plus offensifs (P3 — Reactive Armor).
+    # La valeur (+50%) est passée via delta_override. apply_buff empêche le cumul.
+    "zemus_cd_up":          {"stat": "cd",           "delta": +0.50, "mode": "flat"},
+
     # ── Leene ─────────────────────────────────────────────────
+    # delta=0 ici car la valeur réelle est toujours passée via delta_override
     "leene_armor_steal":    {"stat": "defense",      "delta":  0,    "mode": "flat"},
-    "leene_armorbreak_up":  {"stat": "armor_break",  "delta":  0,    "mode": "flat"},
-    "leene_skill_dmg_up":   {"stat": "skill_dmg",    "delta":  0,    "mode": "flat"},
+    # BUGFIX : delta était 0 → le bonus +45% armor_break n'était jamais appliqué
+    "leene_armorbreak_up":  {"stat": "armor_break",  "delta": +0.45, "mode": "flat"},
+    # BUGFIX : delta était 0 → le bonus +25% skill_dmg n'était jamais appliqué
+    "leene_skill_dmg_up":   {"stat": "skill_dmg",    "delta": +0.25, "mode": "flat"},
 }
 
 
@@ -285,8 +293,6 @@ def apply_buff(character, buff_type: str, duration: int, delta_override: float =
         "source":   source,
     })
     _apply_buff_stat(character, defn.get("stat"), delta, mode, apply=True)
-    if source.character.name == "Leene":
-        print(f"Buff appliqué par Leene sur {character.name}, new skill_dmg = {character.skill_dmg}")
     return True
 
 

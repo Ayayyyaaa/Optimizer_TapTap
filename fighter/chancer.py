@@ -67,6 +67,7 @@ class Chancer:
         self.character = Character(
             name               = "Chancer",
             faction            = "Crane",
+            role               = "Mage",
             hp                 = self.BASE_HP,
             atk                = self.BASE_ATK,
             defense            = self.BASE_DEF,

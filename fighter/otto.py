@@ -53,7 +53,8 @@ class Otto:
     def __init__(self):
         self.character = Character(
             name               = "Otto",
-            faction            = "Unknown",   # à ajuster
+            faction            = "Howler",   # à ajuster
+            role               = "Finisher",  # à ajuster
             hp                 = self.BASE_HP,
             atk                = self.BASE_ATK,
             defense            = self.BASE_DEF,
@@ -131,6 +132,9 @@ class Otto:
         if was_killing_blow:
             self._on_killing_blow()
 
+        if has_debuff(target_char, "molten_fury"):
+            raw_dmg *= 1.15
+
         return dmg
 
     # ══════════════════════════════════════════════════════════
@@ -201,6 +205,9 @@ class Otto:
                         remove_buff(a_char, "otto_cr_up")
                     apply_buff(a_char, "otto_cr_up", duration=2,
                                delta_override=0.50, source=self)
+                    
+        if has_debuff(target_char, "molten_fury"):
+            raw_dmg *= 1.15
 
         return total_dmg
 
